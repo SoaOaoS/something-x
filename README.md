@@ -82,7 +82,7 @@ dbus-python >= 1.3
 ```bash
 git clone https://github.com/SoaOaoS/something-x
 cd something-x
-./nothingx
+./somethingx
 ```
 
 ### Install as a command
