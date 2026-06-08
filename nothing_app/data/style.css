@@ -1,0 +1,355 @@
+@define-color window_bg_color #0a0a0a;
+@define-color window_fg_color #ffffff;
+@define-color view_bg_color #0a0a0a;
+@define-color view_fg_color #ffffff;
+@define-color headerbar_bg_color #0a0a0a;
+@define-color headerbar_fg_color #ffffff;
+@define-color headerbar_border_color #1f1f1f;
+@define-color headerbar_backdrop_color #0a0a0a;
+@define-color card_bg_color #141414;
+@define-color card_fg_color #ffffff;
+@define-color accent_bg_color #ffffff;
+@define-color accent_fg_color #0a0a0a;
+@define-color accent_color #ffffff;
+@define-color destructive_bg_color #e85252;
+@define-color destructive_fg_color #0a0a0a;
+@define-color success_bg_color #8fdf72;
+@define-color success_fg_color #0a0a0a;
+
+window,
+.background {
+    background-color: #0a0a0a;
+    color: #ffffff;
+}
+
+scrolledwindow,
+viewport {
+    background-color: #0a0a0a;
+}
+
+scrollbar trough {
+    background-color: #141414;
+    border-radius: 4px;
+    min-width: 4px;
+}
+scrollbar slider {
+    background-color: #2e2e2e;
+    border-radius: 4px;
+    min-width: 4px;
+    min-height: 40px;
+}
+scrollbar slider:hover { background-color: #3e3e3e; }
+
+headerbar,
+.nothing-header {
+    background-color: #0a0a0a;
+    border-bottom: 1px solid #181818;
+    color: #ffffff;
+    min-height: 54px;
+    box-shadow: none;
+    padding: 0 8px;
+}
+
+headerbar .title {
+    font-family: "JetBrains Mono", "Courier New", monospace;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #ffffff;
+}
+
+headerbar button,
+headerbar button.flat {
+    background: none;
+    border: none;
+    box-shadow: none;
+    color: #ffffff;
+    border-radius: 8px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 4px 8px;
+    transition: background 150ms ease;
+}
+headerbar button:hover { background-color: #1e1e1e; }
+headerbar button:active { background-color: #2a2a2a; }
+
+.nothing-page {
+    background-color: #0a0a0a;
+    padding: 0 16px 24px;
+}
+
+.section-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #3e3e3e;
+    padding: 0 4px;
+    margin-top: 28px;
+    margin-bottom: 10px;
+}
+
+.device-card {
+    background-color: #141414;
+    border-radius: 20px;
+    border: 1px solid #1e1e1e;
+    padding: 20px;
+    margin-bottom: 10px;
+    transition: background 150ms ease, border-color 150ms ease;
+}
+.device-card:hover {
+    background-color: #191919;
+    border-color: #2a2a2a;
+}
+
+.device-card-name {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 17px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.device-card-address {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: #3a3a3a;
+    letter-spacing: 1px;
+    margin-top: 2px;
+}
+
+.status-connected {
+    font-size: 12px;
+    font-weight: 600;
+    color: #8fdf72;
+    letter-spacing: 1px;
+}
+.status-disconnected {
+    font-size: 12px;
+    color: #3e3e3e;
+    letter-spacing: 1px;
+}
+.status-nothing {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #ffffff;
+    background-color: #1e1e1e;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    padding: 3px 8px;
+}
+
+progressbar,
+progressbar trough {
+    background-color: #1e1e1e;
+    border-radius: 4px;
+    min-height: 5px;
+    border: none;
+}
+progressbar progress {
+    background-color: #ffffff;
+    border-radius: 4px;
+    min-height: 5px;
+}
+progressbar.battery-high progress { background-color: #8fdf72; }
+progressbar.battery-mid  progress { background-color: #f0c040; }
+progressbar.battery-low  progress { background-color: #e85252; }
+
+.battery-pct {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffffff;
+    min-width: 38px;
+}
+.battery-label-small {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #3a3a3a;
+    text-transform: uppercase;
+}
+
+.battery-pct-big {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 52px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -2px;
+}
+.battery-unit {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 18px;
+    color: #5e5e5e;
+    letter-spacing: 0;
+    margin-bottom: 8px;
+}
+
+.anc-container {
+    background-color: #141414;
+    border-radius: 16px;
+    border: 1px solid #1e1e1e;
+    padding: 4px;
+}
+
+.anc-button {
+    background: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 12px;
+    color: #4a4a4a;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 16px;
+    transition: all 180ms ease;
+    letter-spacing: 0.3px;
+}
+.anc-button:hover { background-color: #1e1e1e; color: #888888; }
+.anc-button.active,
+.anc-button:checked {
+    background-color: #ffffff;
+    color: #0a0a0a;
+    font-weight: 700;
+}
+
+.eq-button {
+    background-color: #141414;
+    border: 1px solid #1e1e1e;
+    box-shadow: none;
+    border-radius: 24px;
+    color: #4a4a4a;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 18px;
+    transition: all 180ms ease;
+    letter-spacing: 0.3px;
+}
+.eq-button:hover { background-color: #1e1e1e; border-color: #2a2a2a; color: #aaaaaa; }
+.eq-button.active,
+.eq-button:checked {
+    background-color: #ffffff;
+    border-color: #ffffff;
+    color: #0a0a0a;
+    font-weight: 700;
+}
+
+.settings-group {
+    background-color: #141414;
+    border-radius: 18px;
+    border: 1px solid #1e1e1e;
+}
+
+.settings-row {
+    background-color: transparent;
+    padding: 16px 20px;
+    border-bottom: 1px solid #1a1a1a;
+}
+.settings-row:last-child { border-bottom: none; }
+
+.settings-row-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: #ffffff;
+}
+.settings-row-subtitle {
+    font-size: 12px;
+    color: #4a4a4a;
+    margin-top: 3px;
+}
+
+switch {
+    background-color: #2a2a2a;
+    border-radius: 20px;
+    min-width: 48px;
+    min-height: 26px;
+    border: none;
+    box-shadow: none;
+    transition: background 200ms ease;
+}
+switch:checked { background-color: #ffffff; }
+switch slider {
+    background-color: #666666;
+    border-radius: 50%;
+    min-width: 20px;
+    min-height: 20px;
+    margin: 3px;
+    box-shadow: none;
+}
+switch:checked slider { background-color: #0a0a0a; }
+
+.info-key {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #3e3e3e;
+}
+.info-value {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #aaaaaa;
+    letter-spacing: 0.5px;
+}
+
+.scan-button {
+    background-color: #ffffff;
+    border-radius: 16px;
+    color: #0a0a0a;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 14px 32px;
+    border: none;
+    box-shadow: none;
+    letter-spacing: 1px;
+    transition: background 150ms ease;
+}
+.scan-button:hover { background-color: #e0e0e0; }
+.scan-button:active { background-color: #c8c8c8; }
+
+.disconnect-button {
+    background-color: transparent;
+    border-radius: 16px;
+    color: #e85252;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 14px 32px;
+    border: 1px solid #3a1e1e;
+    box-shadow: none;
+    letter-spacing: 1px;
+    transition: all 150ms ease;
+}
+.disconnect-button:hover {
+    background-color: #1a0e0e;
+    border-color: #5a2020;
+}
+
+.empty-title {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #2a2a2a;
+}
+.empty-subtitle {
+    font-size: 13px;
+    color: #2a2a2a;
+    margin-top: 6px;
+}
+
+.nothing-dot {
+    background-color: #ffffff;
+    border-radius: 50%;
+    min-width: 8px;
+    min-height: 8px;
+}
+
+separator { background-color: #181818; }
+
+label { color: #ffffff; }
