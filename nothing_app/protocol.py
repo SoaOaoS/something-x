@@ -1,10 +1,13 @@
+import os
 import socket
 import struct
 import subprocess
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from gi.repository import GLib, GObject
+
+_DEBUG = bool(os.getenv("SOMETHING_X_DEBUG"))
 
 # ── 0x55 protocol (from APK decompilation: Nothing Ear 3 / Donphan) ────────────
 #
@@ -134,6 +137,7 @@ class NothingDevice(GObject.Object):
         self._anc_pending_mode: int = ANCMode.OFF
         self._last_anc_level: int = _ANC_STRONG
         self._thread: threading.Thread | None = None
+        self._low_bat_notified: set[str] = set()
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -318,6 +322,8 @@ class NothingDevice(GObject.Object):
                 chunk = self._sock.recv(256)
                 if not chunk:
                     break
+                if _DEBUG:
+                    print(f"[RX RAW] {chunk.hex()}")
                 buf += chunk
                 buf = self._process_buf(buf)
             except socket.timeout:
@@ -350,6 +356,8 @@ class NothingDevice(GObject.Object):
         frame = header + payload + struct.pack("<H", _crc16(header + payload))
         desc = f" ({label})" if label else f" {payload.hex()}" if payload else ""
         print(f"[TX] cmd=0x{cmd_id:04X}{desc}")
+        if _DEBUG:
+            print(f"[TX RAW] {frame.hex()}")
         try:
             self._sock.sendall(frame)
         except OSError as exc:
@@ -436,12 +444,15 @@ class NothingDevice(GObject.Object):
             pct   = bval & 0x7F
             if btype == _BAT_LEFT and pct != self.state.left_battery:
                 self.state.left_battery = pct
+                self._check_low_battery("left", pct, "Left earbud")
                 changed = True
             elif btype == _BAT_RIGHT and pct != self.state.right_battery:
                 self.state.right_battery = pct
+                self._check_low_battery("right", pct, "Right earbud")
                 changed = True
             elif btype == _BAT_CASE and pct != self.state.case_battery:
                 self.state.case_battery = pct
+                self._check_low_battery("case", pct, "Case")
                 changed = True
         if changed:
             print(f"[protocol] battery L={self.state.left_battery}% "
@@ -519,6 +530,9 @@ class NothingDevice(GObject.Object):
                                         and payload[2] <= 100 else -1)
             print(f"[protocol] legacy battery L={self.state.left_battery}% "
                   f"R={self.state.right_battery}% C={self.state.case_battery}%")
+            self._check_low_battery("left",  self.state.left_battery,  "Left earbud")
+            self._check_low_battery("right", self.state.right_battery, "Right earbud")
+            self._check_low_battery("case",  self.state.case_battery,  "Case")
             GLib.idle_add(self.emit, "state-changed")
         elif msg_type == _L_INIT and payload:
             print(f"[protocol] legacy init: {payload.hex()} — echoing back")
@@ -535,6 +549,21 @@ class NothingDevice(GObject.Object):
             print(f"[protocol] legacy type=0x{msg_type:02x} payload={payload.hex()}")
 
     # ── Utilities ─────────────────────────────────────────────────────────────
+
+    def _check_low_battery(self, slot: str, pct: int, label: str):
+        if pct < 0:
+            return
+        if pct <= 20 and slot not in self._low_bat_notified:
+            self._low_bat_notified.add(slot)
+            threading.Thread(
+                target=subprocess.run,
+                args=(["notify-send", "-u", "critical", "-i", "battery-caution",
+                       "Something X", f"{label}: {pct}% battery remaining"],),
+                kwargs={"capture_output": True},
+                daemon=True,
+            ).start()
+        elif pct > 25:
+            self._low_bat_notified.discard(slot)
 
     def _activation_fallback(self):
         if not self._activated and self._rfcomm_connected:

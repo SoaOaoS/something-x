@@ -47,7 +47,7 @@ The RFCOMM `0x55` protocol is shared across the entire Nothing Ear lineup. Confi
 - [ ] **`.desktop` file** — ship and auto-install it so the app appears in Walker/Rofi/GNOME launcher
 
 ### Features
-- [ ] **Low battery desktop notification** — `notify-send` when any bud drops below 20 %
+- [x] **Low battery desktop notification** — `notify-send` when any bud drops below 20 %
 - [ ] **System tray / background mode** — keep running in tray, show battery on hover
 - [ ] **Per-device profiles** — save ANC + EQ settings per device address, restore on reconnect
 - [ ] **CLI quick-toggle** — `something-x --anc off`, `something-x --eq bass`, `something-x --battery`
@@ -57,7 +57,7 @@ The RFCOMM `0x55` protocol is shared across the entire Nothing Ear lineup. Confi
 ### Protocol / devices
 - [ ] **CMF Buds Pro field testing** — verify ANC command IDs match
 - [ ] **Nothing Ear (1) / (a) field testing** — confirm ANC modes work
-- [ ] **Debug mode** — `SOMETHING_X_DEBUG=1` env var dumps raw RFCOMM frames for contributors
+- [x] **Debug mode** — `SOMETHING_X_DEBUG=1` env var dumps raw RFCOMM frames for contributors
 - [ ] **Graceful ANC mode detection** — query supported modes from device instead of hardcoding
 
 ---
