@@ -5,9 +5,19 @@ import threading
 import cairo
 import gi
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, GLib, GObject, Gdk
+gi.require_version("Pango", "1.0")
+from gi.repository import Gtk, GLib, GObject, Gdk, Pango
 
 from ..bluetooth import BluetoothDevice, BluetoothManager
+
+def _mono_font() -> str:
+    for name in (_MONO, "JetBrainsMono", "Fira Mono", "DejaVu Sans Mono", "monospace"):
+        fm = Pango.FontMap.get_default()
+        if fm.get_family(name) is not None:
+            return name
+    return "monospace"
+
+_MONO = _mono_font()
 from ..protocol import NothingDevice, ANCMode, EQ_PRESETS, DeviceState
 
 
@@ -140,7 +150,7 @@ class EarbudVisual(Gtk.DrawingArea):
 
         # percentage text
         cr.set_source_rgba(1.0, 1.0, 1.0, 1.0 if pct >= 0 else 0.22)
-        cr.select_font_face("JetBrains Mono", cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD)
+        cr.select_font_face(_MONO, cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD)
         text = f"{pct}%" if pct >= 0 else "—"
         cr.set_font_size(13 if pct >= 0 else 17)
         te = cr.text_extents(text)
@@ -149,7 +159,7 @@ class EarbudVisual(Gtk.DrawingArea):
 
         # L / R label below
         cr.set_source_rgba(1.0, 1.0, 1.0, 0.20)
-        cr.select_font_face("JetBrains Mono", cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD)
+        cr.select_font_face(_MONO, cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD)
         cr.set_font_size(9)
         te = cr.text_extents(label)
         cr.move_to(cx - te.width / 2 - te.x_bearing, cy + R + 17)
@@ -198,7 +208,7 @@ class EarbudVisual(Gtk.DrawingArea):
 
         # percentage text
         cr.set_source_rgba(1.0, 1.0, 1.0, 0.72 if pct >= 0 else 0.20)
-        cr.select_font_face("JetBrains Mono", cairo.FontSlant.NORMAL, cairo.FontWeight.NORMAL)
+        cr.select_font_face(_MONO, cairo.FontSlant.NORMAL, cairo.FontWeight.NORMAL)
         cr.set_font_size(9)
         text = f"{pct}%" if pct >= 0 else "—"
         te = cr.text_extents(text)
@@ -207,7 +217,7 @@ class EarbudVisual(Gtk.DrawingArea):
 
         # CASE label
         cr.set_source_rgba(1.0, 1.0, 1.0, 0.18)
-        cr.select_font_face("JetBrains Mono", cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD)
+        cr.select_font_face(_MONO, cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD)
         cr.set_font_size(8)
         te = cr.text_extents("CASE")
         cr.move_to(cx - te.width / 2 - te.x_bearing, cy + R + 14)

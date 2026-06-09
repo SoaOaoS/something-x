@@ -41,10 +41,9 @@ The RFCOMM `0x55` protocol is shared across the entire Nothing Ear lineup. Confi
 ## v1.x — Near term
 
 ### Distribution
-- [ ] **AUR package** — `something-x` in the Arch User Repository (PKGBUILD in repo)
-- [ ] **Flatpak** — for non-Arch distros; self-contained bundle on Flathub
-- [ ] **NixOS flake** — `flake.nix` for Nix users
-- [ ] **`.desktop` file** — ship and auto-install it so the app appears in Walker/Rofi/GNOME launcher
+- ~~**AUR package**~~ — cancelled
+- [x] **NixOS flake** — `flake.nix` for Nix users
+- [x] **`.desktop` file** — ship and auto-install it so the app appears in Walker/Rofi/GNOME launcher
 
 ### Features
 - [x] **Low battery desktop notification** — `notify-send` when any bud drops below 20 %
