@@ -67,6 +67,7 @@ class SomethingXWindow(Adw.ApplicationWindow):
         toolbar_view.set_content(device_page)
 
         nav_page.set_child(toolbar_view)
+        nav_page.connect("hidden", lambda _: device_page.cleanup())
         return nav_page
 
     def _on_device_selected(self, _home, bt_device: BluetoothDevice):

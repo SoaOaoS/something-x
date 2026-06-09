@@ -108,8 +108,10 @@ class BluetoothManager(GObject.Object):
         except Exception as exc:
             print(f"[bluetooth] Signal subscribe failed: {exc}")
 
-    def _on_props_changed(self, interface, changed, _invalidated, path):
+    def _on_props_changed(self, interface, changed, _invalidated=None, path=None):
         if interface != DEVICE_IFACE:
+            return
+        if not path:
             return
         path = str(path)
         if path not in self.devices:
@@ -152,19 +154,22 @@ class BluetoothManager(GObject.Object):
         self._refresh()
         self.emit("devices-changed")
 
-    def connect_device(self, path: str):
+    def connect_device(self, path: str, on_error=None):
         if not self._bus:
             return
+        def _err(e):
+            print(f"[BT] connect error: {e}")
+            if on_error:
+                GLib.idle_add(on_error)
         try:
             iface = dbus.Interface(
                 self._bus.get_object(BLUEZ_SERVICE, path), DEVICE_IFACE
             )
-            iface.Connect(
-                reply_handler=lambda: None,
-                error_handler=lambda e: print(f"[BT] connect error: {e}"),
-            )
+            iface.Connect(reply_handler=lambda: None, error_handler=_err)
         except Exception as exc:
             print(f"[bluetooth] connect {path}: {exc}")
+            if on_error:
+                GLib.idle_add(on_error)
 
     def disconnect_device(self, path: str):
         if not self._bus:

@@ -150,6 +150,10 @@ class DevicePage(Gtk.Box):
         self._anc_buttons: list[tuple[int, Gtk.Button]] = []
         self._eq_buttons: list[tuple[str, Gtk.Button]] = []
         self._updating_ui = False
+        self._bt_conn_handler = bt_manager.connect("device-connected", self._on_bt_device_connected)
+        self._bt_disc_handler = bt_manager.connect("device-disconnected", self._on_bt_device_disconnected)
+        self._connect_retries = 0
+        self._connect_retry_id: int | None = None
         self._build()
         if bt_device.is_nothing:
             self._connect_nothing()
@@ -173,13 +177,9 @@ class DevicePage(Gtk.Box):
         conn_box.set_halign(Gtk.Align.CENTER)
         conn_box.set_margin_bottom(4)
 
-        self._conn_label = Gtk.Label(
-            label="● Connected" if self._bt_device.connected else "○ Disconnected"
-        )
-        self._conn_label.add_css_class(
-            "status-connected" if self._bt_device.connected else "status-disconnected"
-        )
+        self._conn_label = Gtk.Label()
         conn_box.append(self._conn_label)
+        self._update_status_label()
 
         if self._bt_device.battery is not None:
             bat_lbl = Gtk.Label(label=f"  {self._bt_device.battery}%")
@@ -196,10 +196,10 @@ class DevicePage(Gtk.Box):
         disc_row.set_margin_top(24)
         disc_row.set_margin_bottom(8)
 
-        disc_btn = Gtk.Button(label="DISCONNECT")
-        disc_btn.add_css_class("disconnect-button")
-        disc_btn.connect("clicked", self._on_disconnect)
-        disc_row.append(disc_btn)
+        self._conn_btn = Gtk.Button()
+        self._update_conn_button()
+        self._conn_btn.connect("clicked", self._on_conn_btn_clicked)
+        disc_row.append(self._conn_btn)
         page.append(disc_row)
 
     def _build_nothing_controls(self, page: Gtk.Box):
@@ -297,6 +297,35 @@ class DevicePage(Gtk.Box):
         self._sync_anc_ui(ANCMode.OFF)
         self._sync_eq_ui("Balanced")
 
+    def _update_conn_button(self):
+        self._conn_btn.set_sensitive(True)
+        if self._bt_device.connected:
+            self._conn_btn.set_label("DISCONNECT")
+            self._conn_btn.remove_css_class("connect-button")
+            self._conn_btn.remove_css_class("connecting-button")
+            self._conn_btn.add_css_class("disconnect-button")
+        else:
+            self._conn_btn.set_label("CONNECT")
+            self._conn_btn.remove_css_class("disconnect-button")
+            self._conn_btn.remove_css_class("connecting-button")
+            self._conn_btn.add_css_class("connect-button")
+
+    def _update_status_label(self):
+        if self._bt_device.connected:
+            self._conn_label.set_label("● Connected")
+            self._conn_label.remove_css_class("status-disconnected")
+            self._conn_label.add_css_class("status-connected")
+        else:
+            self._conn_label.set_label("○ Disconnected")
+            self._conn_label.remove_css_class("status-connected")
+            self._conn_label.add_css_class("status-disconnected")
+
+    def cleanup(self):
+        if self._nothing_dev:
+            self._nothing_dev.disconnect_rfcomm()
+        self._bt.disconnect(self._bt_conn_handler)
+        self._bt.disconnect(self._bt_disc_handler)
+
     def _connect_nothing(self):
         self._nothing_dev = NothingDevice(self._bt_device.address)
         self._nothing_dev.connect("state-changed", self._on_state_changed)
@@ -355,7 +384,31 @@ class DevicePage(Gtk.Box):
             self._nothing_dev.set_in_ear_detection(state)
         return False
 
-    def _on_disconnect(self, _btn):
+    def _on_conn_btn_clicked(self, _btn):
+        if self._bt_device.connected:
+            if self._nothing_dev:
+                self._nothing_dev.disconnect_rfcomm()
+            self._bt.disconnect_device(self._bt_device.path)
+        else:
+            self._conn_btn.set_label("CONNECTING…")
+            self._conn_btn.set_sensitive(False)
+            self._conn_btn.remove_css_class("connect-button")
+            self._conn_btn.add_css_class("connecting-button")
+            self._bt.connect_device(self._bt_device.path, on_error=self._on_connect_failed)
+
+    def _on_connect_failed(self):
+        self._update_conn_button()
+
+    def _on_bt_device_connected(self, _manager, path: str):
+        if path != self._bt_device.path:
+            return
+        self._update_conn_button()
+        self._update_status_label()
         if self._nothing_dev:
-            self._nothing_dev.disconnect_rfcomm()
-        self._bt.disconnect_device(self._bt_device.path)
+            self._nothing_dev.connect_rfcomm()
+
+    def _on_bt_device_disconnected(self, _manager, path: str):
+        if path != self._bt_device.path:
+            return
+        self._update_conn_button()
+        self._update_status_label()

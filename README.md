@@ -108,7 +108,7 @@ update-desktop-database ~/.local/share/applications/
 ## Usage
 
 ```
-./nothingx          # launch
+./somethingx        # launch
 something-x         # if installed via pip
 ```
 

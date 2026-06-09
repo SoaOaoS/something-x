@@ -4,15 +4,15 @@
 @define-color view_fg_color #ffffff;
 @define-color headerbar_bg_color #0a0a0a;
 @define-color headerbar_fg_color #ffffff;
-@define-color headerbar_border_color #1f1f1f;
+@define-color headerbar_border_color #1e1e1e;
 @define-color headerbar_backdrop_color #0a0a0a;
-@define-color card_bg_color #141414;
+@define-color card_bg_color #111111;
 @define-color card_fg_color #ffffff;
-@define-color accent_bg_color #ffffff;
-@define-color accent_fg_color #0a0a0a;
-@define-color accent_color #ffffff;
+@define-color accent_bg_color #e83535;
+@define-color accent_fg_color #ffffff;
+@define-color accent_color #e83535;
 @define-color destructive_bg_color #e85252;
-@define-color destructive_fg_color #0a0a0a;
+@define-color destructive_fg_color #ffffff;
 @define-color success_bg_color #8fdf72;
 @define-color success_fg_color #0a0a0a;
 
@@ -64,20 +64,22 @@ headerbar button.flat {
     background: none;
     border: none;
     box-shadow: none;
-    color: #ffffff;
+    color: #888888;
     border-radius: 8px;
     min-width: 36px;
     min-height: 36px;
     padding: 4px 8px;
-    transition: background 150ms ease;
+    transition: background 150ms ease, color 150ms ease;
 }
-headerbar button:hover { background-color: #1e1e1e; }
-headerbar button:active { background-color: #2a2a2a; }
+headerbar button:hover { background-color: #1a1a1a; color: #ffffff; }
+headerbar button:active { background-color: #242424; color: #ffffff; }
 
 .nothing-page {
     background-color: #0a0a0a;
     padding: 0 16px 24px;
 }
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
 
 .section-label {
     font-family: "JetBrains Mono", monospace;
@@ -85,64 +87,70 @@ headerbar button:active { background-color: #2a2a2a; }
     font-weight: 700;
     letter-spacing: 3px;
     text-transform: uppercase;
-    color: #3e3e3e;
+    color: #444444;
     padding: 0 4px;
     margin-top: 28px;
     margin-bottom: 10px;
 }
 
+/* ── Device list cards ───────────────────────────────────────────────────── */
+
 .device-card {
-    background-color: #141414;
+    background-color: #111111;
     border-radius: 20px;
     border: 1px solid #1e1e1e;
     padding: 20px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     transition: background 150ms ease, border-color 150ms ease;
 }
 .device-card:hover {
-    background-color: #191919;
+    background-color: #161616;
     border-color: #2a2a2a;
 }
 
 .device-card-name {
     font-family: "JetBrains Mono", monospace;
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
     color: #ffffff;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
 }
 
 .device-card-address {
     font-family: "JetBrains Mono", monospace;
     font-size: 11px;
-    color: #3a3a3a;
+    color: #3e3e3e;
     letter-spacing: 1px;
     margin-top: 2px;
 }
 
 .status-connected {
-    font-size: 12px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
     font-weight: 600;
     color: #8fdf72;
     letter-spacing: 1px;
 }
 .status-disconnected {
-    font-size: 12px;
-    color: #3e3e3e;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: #3a3a3a;
     letter-spacing: 1px;
 }
 .status-nothing {
     font-family: "JetBrains Mono", monospace;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     letter-spacing: 2px;
     text-transform: uppercase;
-    color: #ffffff;
-    background-color: #1e1e1e;
-    border: 1px solid #2a2a2a;
+    color: #e83535;
+    background-color: #160808;
+    border: 1px solid #3a1212;
     border-radius: 6px;
     padding: 3px 8px;
 }
+
+/* ── Battery indicators ──────────────────────────────────────────────────── */
 
 progressbar,
 progressbar trough {
@@ -152,7 +160,7 @@ progressbar trough {
     border: none;
 }
 progressbar progress {
-    background-color: #ffffff;
+    background-color: #e83535;
     border-radius: 4px;
     min-height: 5px;
 }
@@ -174,7 +182,6 @@ progressbar.battery-low  progress { background-color: #e85252; }
     color: #3a3a3a;
     text-transform: uppercase;
 }
-
 .battery-pct-big {
     font-family: "JetBrains Mono", monospace;
     font-size: 52px;
@@ -185,13 +192,14 @@ progressbar.battery-low  progress { background-color: #e85252; }
 .battery-unit {
     font-family: "JetBrains Mono", monospace;
     font-size: 18px;
-    color: #5e5e5e;
-    letter-spacing: 0;
+    color: #4a4a4a;
     margin-bottom: 8px;
 }
 
+/* ── Sound mode buttons ──────────────────────────────────────────────────── */
+
 .anc-container {
-    background-color: #141414;
+    background-color: #111111;
     border-radius: 16px;
     border: 1px solid #1e1e1e;
     padding: 4px;
@@ -202,44 +210,74 @@ progressbar.battery-low  progress { background-color: #e85252; }
     border: none;
     box-shadow: none;
     border-radius: 12px;
-    color: #4a4a4a;
+    color: #555555;
     font-size: 13px;
     font-weight: 600;
     padding: 10px 16px;
     transition: all 180ms ease;
     letter-spacing: 0.3px;
 }
-.anc-button:hover { background-color: #1e1e1e; color: #888888; }
+.anc-button:hover {
+    background-color: #1a1a1a;
+    color: #aaaaaa;
+}
 .anc-button.active,
 .anc-button:checked {
-    background-color: #ffffff;
-    color: #0a0a0a;
+    background-color: #e83535;
+    color: #ffffff;
     font-weight: 700;
 }
+.anc-button.active label,
+.anc-button:checked label {
+    color: #ffffff;
+}
+.anc-button.active:hover,
+.anc-button:checked:hover {
+    background-color: #d02b2b;
+    color: #ffffff;
+}
+
+/* ── EQ preset buttons ───────────────────────────────────────────────────── */
 
 .eq-button {
-    background-color: #141414;
+    background-color: #111111;
     border: 1px solid #1e1e1e;
     box-shadow: none;
     border-radius: 24px;
-    color: #4a4a4a;
+    color: #555555;
     font-size: 13px;
     font-weight: 600;
     padding: 9px 18px;
     transition: all 180ms ease;
     letter-spacing: 0.3px;
 }
-.eq-button:hover { background-color: #1e1e1e; border-color: #2a2a2a; color: #aaaaaa; }
+.eq-button:hover {
+    background-color: #1a1a1a;
+    border-color: #2a2a2a;
+    color: #aaaaaa;
+}
 .eq-button.active,
 .eq-button:checked {
-    background-color: #ffffff;
-    border-color: #ffffff;
-    color: #0a0a0a;
+    background-color: #e83535;
+    border-color: #e83535;
+    color: #ffffff;
     font-weight: 700;
 }
+.eq-button.active label,
+.eq-button:checked label {
+    color: #ffffff;
+}
+.eq-button.active:hover,
+.eq-button:checked:hover {
+    background-color: #d02b2b;
+    border-color: #d02b2b;
+    color: #ffffff;
+}
+
+/* ── Settings group ──────────────────────────────────────────────────────── */
 
 .settings-group {
-    background-color: #141414;
+    background-color: #111111;
     border-radius: 18px;
     border: 1px solid #1e1e1e;
 }
@@ -247,23 +285,23 @@ progressbar.battery-low  progress { background-color: #e85252; }
 .settings-row {
     background-color: transparent;
     padding: 16px 20px;
-    border-bottom: 1px solid #1a1a1a;
+    border-bottom: 1px solid #181818;
 }
 .settings-row:last-child { border-bottom: none; }
 
 .settings-row-title {
     font-size: 15px;
     font-weight: 500;
-    color: #ffffff;
+    color: #e8e8e8;
 }
 .settings-row-subtitle {
     font-size: 12px;
-    color: #4a4a4a;
+    color: #555555;
     margin-top: 3px;
 }
 
 switch {
-    background-color: #2a2a2a;
+    background-color: #222222;
     border-radius: 20px;
     min-width: 48px;
     min-height: 26px;
@@ -271,16 +309,18 @@ switch {
     box-shadow: none;
     transition: background 200ms ease;
 }
-switch:checked { background-color: #ffffff; }
+switch:checked { background-color: #e83535; }
 switch slider {
-    background-color: #666666;
+    background-color: #4a4a4a;
     border-radius: 50%;
     min-width: 20px;
     min-height: 20px;
     margin: 3px;
     box-shadow: none;
 }
-switch:checked slider { background-color: #0a0a0a; }
+switch:checked slider { background-color: #ffffff; }
+
+/* ── Device info ─────────────────────────────────────────────────────────── */
 
 .info-key {
     font-family: "JetBrains Mono", monospace;
@@ -293,58 +333,99 @@ switch:checked slider { background-color: #0a0a0a; }
     font-family: "JetBrains Mono", monospace;
     font-size: 13px;
     font-weight: 600;
-    color: #aaaaaa;
+    color: #777777;
     letter-spacing: 0.5px;
 }
 
+/* ── Action buttons ──────────────────────────────────────────────────────── */
+
 .scan-button {
-    background-color: #ffffff;
+    background-color: #e83535;
     border-radius: 16px;
-    color: #0a0a0a;
+    color: #ffffff;
     font-weight: 700;
     font-size: 14px;
-    padding: 14px 32px;
+    padding: 14px 40px;
     border: none;
     box-shadow: none;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
     transition: background 150ms ease;
 }
-.scan-button:hover { background-color: #e0e0e0; }
-.scan-button:active { background-color: #c8c8c8; }
+.scan-button label { color: #ffffff; }
+.scan-button:hover { background-color: #d02b2b; }
+.scan-button:active { background-color: #b52424; }
 
 .disconnect-button {
     background-color: transparent;
     border-radius: 16px;
-    color: #e85252;
+    color: #cc3333;
     font-weight: 700;
     font-size: 14px;
     padding: 14px 32px;
-    border: 1px solid #3a1e1e;
+    border: 1px solid #2e1212;
     box-shadow: none;
     letter-spacing: 1px;
     transition: all 150ms ease;
 }
+.disconnect-button label { color: #cc3333; }
 .disconnect-button:hover {
-    background-color: #1a0e0e;
-    border-color: #5a2020;
+    background-color: #160a0a;
+    border-color: #4a1c1c;
+    color: #e83535;
 }
+.disconnect-button:hover label { color: #e83535; }
+
+.connect-button {
+    background-color: transparent;
+    border-radius: 16px;
+    color: #e83535;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 14px 32px;
+    border: 1px solid #3a1212;
+    box-shadow: none;
+    letter-spacing: 1px;
+    transition: all 150ms ease;
+}
+.connect-button label { color: #e83535; }
+.connect-button:hover {
+    background-color: #160808;
+    border-color: #5e1c1c;
+}
+
+.connecting-button {
+    background-color: transparent;
+    border-radius: 16px;
+    color: #444444;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 14px 32px;
+    border: 1px solid #222222;
+    box-shadow: none;
+    letter-spacing: 1px;
+}
+.connecting-button label { color: #444444; }
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
 
 .empty-title {
     font-family: "JetBrains Mono", monospace;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
     text-transform: uppercase;
-    color: #2a2a2a;
+    color: #282828;
 }
 .empty-subtitle {
     font-size: 13px;
-    color: #2a2a2a;
-    margin-top: 6px;
+    color: #303030;
+    margin-top: 4px;
 }
 
+/* ── Brand elements ──────────────────────────────────────────────────────── */
+
 .nothing-dot {
-    background-color: #ffffff;
+    background-color: #e83535;
     border-radius: 50%;
     min-width: 8px;
     min-height: 8px;

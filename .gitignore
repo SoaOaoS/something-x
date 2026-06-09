@@ -19,3 +19,6 @@ env/
 *~
 .DS_Store
 Thumbs.db
+
+# apk reverse-engineering artifacts or ressources
+*apkm*
