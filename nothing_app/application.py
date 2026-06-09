@@ -8,6 +8,7 @@ from gi.repository import Gtk, Adw, Gdk, Gio
 
 from .bluetooth import BluetoothManager
 from .window import SomethingXWindow
+from .splash import SplashScreen
 
 
 def _css_path() -> str:
@@ -26,14 +27,25 @@ class SomethingXApplication(Adw.Application):
             flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
         )
         self._bt: BluetoothManager | None = None
+        self._splash: SplashScreen | None = None
         self.connect("activate", self._on_activate)
 
     def _on_activate(self, _app):
         Adw.StyleManager.get_default().set_color_scheme(Adw.ColorScheme.FORCE_DARK)
         self._load_css()
         self._bt = BluetoothManager()
+        splash = SplashScreen(on_done=self._on_splash_done)
+        splash.set_application(self)
+        self._splash = splash
+        splash.present()
+        splash.start()
+
+    def _on_splash_done(self):
         win = SomethingXWindow(bt_manager=self._bt, application=self)
         win.present()
+        if self._splash:
+            self._splash.destroy()
+            self._splash = None
 
     def _load_css(self):
         provider = Gtk.CssProvider()

@@ -1,0 +1,127 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  id-token: write  # for PyPI OIDC trusted publishing
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Skip if the commit was made by the bot itself (version bump commit)
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Determine version bump from conventional commit ─────────────────
+      - name: Parse commit and bump version
+        id: version
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Commit: $COMMIT_MSG"
+
+          CURRENT=$(python3 -c "
+          import re, sys
+          m = re.search(r'version\s*=\s*\"([^\"]+)\"', open('pyproject.toml').read())
+          print(m.group(1) if m else sys.exit(1))
+          ")
+          echo "Current version: $CURRENT"
+
+          MAJOR=$(echo $CURRENT | cut -d. -f1)
+          MINOR=$(echo $CURRENT | cut -d. -f2)
+          PATCH=$(echo $CURRENT | cut -d. -f3)
+
+          # MAJOR: breaking change marker
+          if echo "$COMMIT_MSG" | grep -qE "(^(feat|fix|refactor|perf)!:)|(BREAKING CHANGE:)"; then
+            BUMP=major
+            MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
+          # MINOR: new feature
+          elif echo "$COMMIT_MSG" | grep -qE "^feat(\([^)]+\))?:"; then
+            BUMP=minor
+            MINOR=$((MINOR + 1)); PATCH=0
+          # PATCH: bug fix or improvement
+          elif echo "$COMMIT_MSG" | grep -qE "^(fix|perf|refactor)(\([^)]+\))?:"; then
+            BUMP=patch
+            PATCH=$((PATCH + 1))
+          # No release: maintenance commits
+          else
+            echo "Commit type does not trigger a release (docs/chore/style/ci/test). Skipping."
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          NEW="$MAJOR.$MINOR.$PATCH"
+          echo "Bump: $BUMP  →  $CURRENT → $NEW"
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "new=$NEW"         >> $GITHUB_OUTPUT
+          echo "bump=$BUMP"       >> $GITHUB_OUTPUT
+          echo "skip=false"       >> $GITHUB_OUTPUT
+
+      # ── Update pyproject.toml ───────────────────────────────────────────
+      - name: Update version in pyproject.toml
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          sed -i "s/^version *= *\"${{ steps.version.outputs.current }}\"/version = \"${{ steps.version.outputs.new }}\"/" pyproject.toml
+          grep "^version" pyproject.toml
+
+      # ── Commit, tag, push ───────────────────────────────────────────────
+      - name: Commit version bump and tag
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          git commit -m "chore: release v${{ steps.version.outputs.new }} [skip ci]"
+          git tag "v${{ steps.version.outputs.new }}"
+          git push origin main
+          git push origin "v${{ steps.version.outputs.new }}"
+
+      # ── Build wheel + sdist ─────────────────────────────────────────────
+      - name: Set up Python
+        if: steps.version.outputs.skip != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build distribution
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          pip install build
+          python -m build
+          ls dist/
+
+      # ── GitHub Release ──────────────────────────────────────────────────
+      - name: Create GitHub Release
+        if: steps.version.outputs.skip != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.version.outputs.new }}"
+          generate_release_notes: true
+          files: dist/*
+          body: |
+            ## Something X v${{ steps.version.outputs.new }}
+
+            **Bump type**: `${{ steps.version.outputs.bump }}`
+
+            ### Install
+
+            ```bash
+            # Arch / Omarchy (recommended)
+            sudo pacman -S python-gobject python-dbus python-cairo gtk4 libadwaita
+            pip install something-x==${{ steps.version.outputs.new }}
+
+            # Or download the wheel below and install directly
+            pip install something_x-${{ steps.version.outputs.new }}-py3-none-any.whl
+            ```
+
+      # ── Publish to PyPI (OIDC trusted publisher — no secret needed) ─────
+      - name: Publish to PyPI
+        if: steps.version.outputs.skip != 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1

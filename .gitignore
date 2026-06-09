@@ -1,24 +1,43 @@
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
 *.so
 *.egg
 *.egg-info/
+.eggs/
+MANIFEST
+
+# Build / distribution
 dist/
 build/
-.eggs/
 *.whl
+*.tar.gz
+
+# Virtualenvs
 .venv/
 venv/
 env/
 .env
+ENV/
+
+# Tools
 .cache/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# OS
 .DS_Store
 Thumbs.db
 
-# apk reverse-engineering artifacts or ressources
+# APK reverse-engineering artifacts (local research only)
 *apkm*
+apkm_decompiled/
+apkm_extracted/

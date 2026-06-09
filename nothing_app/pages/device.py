@@ -1,10 +1,59 @@
 import math
+import re
+import subprocess
+import threading
+import cairo
 import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, GLib, GObject, Gdk
 
 from ..bluetooth import BluetoothDevice, BluetoothManager
 from ..protocol import NothingDevice, ANCMode, EQ_PRESETS, DeviceState
+
+
+def _find_bt_sink(address: str) -> str | None:
+    addr_key = address.replace(':', '_').lower()
+    try:
+        out = subprocess.run(
+            ["pactl", "list", "short", "sinks"],
+            capture_output=True, text=True, timeout=2,
+        ).stdout
+        for line in out.splitlines():
+            if addr_key in line.lower():
+                parts = line.split('\t')
+                if len(parts) >= 2:
+                    return parts[1].strip()
+    except Exception:
+        pass
+    return None
+
+
+def _get_sink_volume(address: str) -> int | None:
+    sink = _find_bt_sink(address)
+    if not sink:
+        return None
+    try:
+        out = subprocess.run(
+            ["pactl", "get-sink-volume", sink],
+            capture_output=True, text=True, timeout=2,
+        ).stdout
+        m = re.search(r'(\d+)%', out)
+        return int(m.group(1)) if m else None
+    except Exception:
+        return None
+
+
+def _set_sink_volume(address: str, pct: int):
+    sink = _find_bt_sink(address)
+    if not sink:
+        return
+    try:
+        subprocess.run(
+            ["pactl", "set-sink-volume", sink, f"{pct}%"],
+            capture_output=True, timeout=2,
+        )
+    except Exception:
+        pass
 
 
 def _battery_color(pct: int) -> tuple[float, float, float]:
@@ -20,7 +69,7 @@ def _battery_color(pct: int) -> tuple[float, float, float]:
 class EarbudVisual(Gtk.DrawingArea):
     def __init__(self):
         super().__init__()
-        self.set_size_request(320, 180)
+        self.set_size_request(340, 190)
         self.set_draw_func(self._draw)
         self._left = -1
         self._right = -1
@@ -32,82 +81,137 @@ class EarbudVisual(Gtk.DrawingArea):
 
     def _draw(self, _area, cr, width, height):
         cx = width / 2
-        cy = height / 2 - 10
-        self._draw_bud(cr, cx - 90, cy, self._left, "L")
-        self._draw_bud(cr, cx + 90, cy, self._right, "R")
-        self._draw_case(cr, cx, cy + 52, self._case)
+        cy = height / 2 - 8
+        self._draw_bud(cr, cx - 92, cy, self._left, "L")
+        self._draw_bud(cr, cx + 92, cy, self._right, "R")
+        self._draw_case(cr, cx, cy + 54, self._case)
 
     def _draw_bud(self, cr, cx, cy, pct, label):
-        R = 40
-        r = 28
+        R = 42
+        r = 29
+        bc = _battery_color(pct) if pct >= 0 else (0.18, 0.18, 0.18)
 
-        cr.set_source_rgba(0.12, 0.12, 0.12, 1.0)
+        # outer diffuse glow (battery color)
+        for i in range(3):
+            rg = cairo.RadialGradient(cx, cy, R - 2, cx, cy, R + 14 + i * 8)
+            rg.add_color_stop_rgba(0, *bc, 0.10 - i * 0.025)
+            rg.add_color_stop_rgba(1, *bc, 0)
+            cr.set_source(rg)
+            cr.arc(cx, cy, R + 14 + i * 8, 0, 2 * math.pi)
+            cr.fill()
+
+        # body: radial gradient for sphere depth
+        body = cairo.RadialGradient(cx - R * 0.28, cy - R * 0.28, R * 0.08, cx, cy, R)
+        body.add_color_stop_rgba(0, 0.24, 0.24, 0.24, 1.0)
+        body.add_color_stop_rgba(0.7, 0.10, 0.10, 0.10, 1.0)
+        body.add_color_stop_rgba(1, 0.04, 0.04, 0.04, 1.0)
+        cr.set_source(body)
         cr.arc(cx, cy, R, 0, 2 * math.pi)
         cr.fill()
 
-        cr.set_source_rgba(0.15, 0.15, 0.15, 1.0)
-        cr.set_line_width(7)
+        # battery track (dim full ring)
+        cr.set_source_rgba(1.0, 1.0, 1.0, 0.07)
+        cr.set_line_width(6)
         cr.arc(cx, cy, R - 3, 0, 2 * math.pi)
         cr.stroke()
 
+        # battery arc (colored progress)
         if pct > 0:
-            cr.set_source_rgba(*_battery_color(pct), 1.0)
-            cr.set_line_width(7)
-            cr.set_line_cap(1)
+            cr.set_source_rgba(*bc, 1.0)
+            cr.set_line_width(6)
+            cr.set_line_cap(cairo.LineCap.ROUND)
             cr.arc(cx, cy, R - 3, -math.pi / 2, -math.pi / 2 + (pct / 100) * 2 * math.pi)
             cr.stroke()
 
-        cr.set_source_rgba(0.08, 0.08, 0.08, 1.0)
+        # inner circle: radial gradient for glass depth
+        inner = cairo.RadialGradient(cx - r * 0.32, cy - r * 0.32, r * 0.06, cx, cy, r)
+        inner.add_color_stop_rgba(0, 0.17, 0.17, 0.17, 1.0)
+        inner.add_color_stop_rgba(1, 0.03, 0.03, 0.03, 1.0)
+        cr.set_source(inner)
         cr.arc(cx, cy, r, 0, 2 * math.pi)
         cr.fill()
 
-        cr.set_source_rgba(1.0, 1.0, 1.0, 1.0 if pct >= 0 else 0.3)
-        cr.select_font_face("JetBrains Mono", 0, 1)
+        # glass highlight arc (top-left crescent)
+        cr.set_source_rgba(1.0, 1.0, 1.0, 0.10)
+        cr.set_line_width(4)
+        cr.set_line_cap(cairo.LineCap.ROUND)
+        cr.arc(cx, cy, r - 4, math.pi * 1.05, math.pi * 1.72)
+        cr.stroke()
+
+        # percentage text
+        cr.set_source_rgba(1.0, 1.0, 1.0, 1.0 if pct >= 0 else 0.22)
+        cr.select_font_face("JetBrains Mono", cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD)
         text = f"{pct}%" if pct >= 0 else "—"
-        cr.set_font_size(13 if pct >= 0 else 16)
+        cr.set_font_size(13 if pct >= 0 else 17)
         te = cr.text_extents(text)
         cr.move_to(cx - te.width / 2 - te.x_bearing, cy - te.height / 2 - te.y_bearing)
         cr.show_text(text)
 
-        cr.set_source_rgba(0.3, 0.3, 0.3, 1.0)
-        cr.select_font_face("JetBrains Mono", 0, 0)
-        cr.set_font_size(11)
+        # L / R label below
+        cr.set_source_rgba(1.0, 1.0, 1.0, 0.20)
+        cr.select_font_face("JetBrains Mono", cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD)
+        cr.set_font_size(9)
         te = cr.text_extents(label)
-        cr.move_to(cx - te.width / 2 - te.x_bearing, cy + R + 16)
+        cr.move_to(cx - te.width / 2 - te.x_bearing, cy + R + 17)
         cr.show_text(label)
 
     def _draw_case(self, cr, cx, cy, pct):
-        R = 16
+        R = 18
+        bc = _battery_color(pct) if pct >= 0 else (0.18, 0.18, 0.18)
 
-        cr.set_source_rgba(0.12, 0.12, 0.12, 1.0)
+        # outer diffuse glow
+        rg = cairo.RadialGradient(cx, cy, R - 1, cx, cy, R + 14)
+        rg.add_color_stop_rgba(0, *bc, 0.09)
+        rg.add_color_stop_rgba(1, *bc, 0)
+        cr.set_source(rg)
+        cr.arc(cx, cy, R + 14, 0, 2 * math.pi)
+        cr.fill()
+
+        # body
+        body = cairo.RadialGradient(cx - R * 0.28, cy - R * 0.28, R * 0.08, cx, cy, R)
+        body.add_color_stop_rgba(0, 0.22, 0.22, 0.22, 1.0)
+        body.add_color_stop_rgba(1, 0.05, 0.05, 0.05, 1.0)
+        cr.set_source(body)
         cr.arc(cx, cy, R, 0, 2 * math.pi)
         cr.fill()
 
-        cr.set_source_rgba(0.15, 0.15, 0.15, 1.0)
+        # battery track
+        cr.set_source_rgba(1.0, 1.0, 1.0, 0.07)
         cr.set_line_width(4)
         cr.arc(cx, cy, R - 2, 0, 2 * math.pi)
         cr.stroke()
 
+        # battery arc
         if pct > 0:
-            cr.set_source_rgba(*_battery_color(pct), 1.0)
+            cr.set_source_rgba(*bc, 1.0)
             cr.set_line_width(4)
-            cr.set_line_cap(1)
+            cr.set_line_cap(cairo.LineCap.ROUND)
             cr.arc(cx, cy, R - 2, -math.pi / 2, -math.pi / 2 + (pct / 100) * 2 * math.pi)
             cr.stroke()
 
-        cr.set_source_rgba(0.3, 0.3, 0.3, 1.0)
-        cr.select_font_face("JetBrains Mono", 0, 0)
-        cr.set_font_size(9)
-        te = cr.text_extents("CASE")
-        cr.move_to(cx - te.width / 2 - te.x_bearing, cy + R + 14)
-        cr.show_text("CASE")
+        # glass highlight
+        cr.set_source_rgba(1.0, 1.0, 1.0, 0.09)
+        cr.set_line_width(3)
+        cr.set_line_cap(cairo.LineCap.ROUND)
+        cr.arc(cx, cy, R - 4, math.pi * 1.05, math.pi * 1.72)
+        cr.stroke()
 
-        cr.set_source_rgba(0.6, 0.6, 0.6, 1.0 if pct >= 0 else 0.3)
+        # percentage text
+        cr.set_source_rgba(1.0, 1.0, 1.0, 0.72 if pct >= 0 else 0.20)
+        cr.select_font_face("JetBrains Mono", cairo.FontSlant.NORMAL, cairo.FontWeight.NORMAL)
         cr.set_font_size(9)
         text = f"{pct}%" if pct >= 0 else "—"
         te = cr.text_extents(text)
         cr.move_to(cx - te.width / 2 - te.x_bearing, cy - te.height / 2 - te.y_bearing)
         cr.show_text(text)
+
+        # CASE label
+        cr.set_source_rgba(1.0, 1.0, 1.0, 0.18)
+        cr.select_font_face("JetBrains Mono", cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD)
+        cr.set_font_size(8)
+        te = cr.text_extents("CASE")
+        cr.move_to(cx - te.width / 2 - te.x_bearing, cy + R + 14)
+        cr.show_text("CASE")
 
 
 def _section(label: str) -> Gtk.Label:
@@ -150,6 +254,8 @@ class DevicePage(Gtk.Box):
         self._anc_buttons: list[tuple[int, Gtk.Button]] = []
         self._eq_buttons: list[tuple[str, Gtk.Button]] = []
         self._updating_ui = False
+        self._vol_debounce_id: int | None = None
+        self._vol_handler: int | None = None
         self._bt_conn_handler = bt_manager.connect("device-connected", self._on_bt_device_connected)
         self._bt_disc_handler = bt_manager.connect("device-disconnected", self._on_bt_device_disconnected)
         self._connect_retries = 0
@@ -157,6 +263,8 @@ class DevicePage(Gtk.Box):
         self._build()
         if bt_device.is_nothing:
             self._connect_nothing()
+        if bt_device.connected:
+            GLib.timeout_add(800, self._query_volume)
 
     def _build(self):
         scroll = Gtk.ScrolledWindow()
@@ -243,6 +351,27 @@ class DevicePage(Gtk.Box):
             self._eq_buttons.append((preset, btn))
 
         page.append(eq_flow)
+
+        page.append(_section("VOLUME"))
+
+        vol_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        vol_row.set_margin_bottom(4)
+
+        self._vol_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
+        self._vol_scale.set_hexpand(True)
+        self._vol_scale.set_draw_value(False)
+        self._vol_scale.add_css_class("volume-slider")
+        self._vol_scale.set_value(70)
+        self._vol_handler = self._vol_scale.connect("value-changed", self._on_volume_changed)
+
+        self._vol_label = Gtk.Label(label="70%")
+        self._vol_label.add_css_class("volume-label")
+        self._vol_label.set_width_chars(4)
+        self._vol_label.set_xalign(1)
+
+        vol_row.append(self._vol_scale)
+        vol_row.append(self._vol_label)
+        page.append(vol_row)
 
         page.append(_section("SETTINGS"))
 
@@ -349,9 +478,40 @@ class DevicePage(Gtk.Box):
 
     def _on_rfcomm_connected(self, _dev):
         print(f"[device page] RFCOMM connected to {self._bt_device.name}")
+        GLib.timeout_add(800, self._query_volume)
 
     def _on_rfcomm_disconnected(self, _dev):
         print(f"[device page] RFCOMM disconnected from {self._bt_device.name}")
+
+    def _query_volume(self):
+        def _run():
+            pct = _get_sink_volume(self._bt_device.address)
+            if pct is not None:
+                GLib.idle_add(self._apply_vol_display, pct)
+        threading.Thread(target=_run, daemon=True).start()
+        return False
+
+    def _apply_vol_display(self, pct: int):
+        if not hasattr(self, "_vol_scale") or self._vol_handler is None:
+            return
+        self._vol_scale.handler_block(self._vol_handler)
+        self._vol_scale.set_value(pct)
+        self._vol_label.set_label(f"{pct}%")
+        self._vol_scale.handler_unblock(self._vol_handler)
+
+    def _on_volume_changed(self, scale: Gtk.Scale):
+        pct = int(scale.get_value())
+        self._vol_label.set_label(f"{pct}%")
+        if self._vol_debounce_id is not None:
+            GLib.source_remove(self._vol_debounce_id)
+        self._vol_debounce_id = GLib.timeout_add(150, self._do_set_volume, pct)
+
+    def _do_set_volume(self, pct: int):
+        self._vol_debounce_id = None
+        threading.Thread(
+            target=_set_sink_volume, args=(self._bt_device.address, pct), daemon=True
+        ).start()
+        return False
 
     def _sync_anc_ui(self, active_mode: int):
         for mode, btn in self._anc_buttons:

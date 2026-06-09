@@ -400,6 +400,18 @@ class NothingDevice(GObject.Object):
             changed = self._parse_anc(payload)
         elif cmd_id in (_CMD_EARPHONE, _EVT_STATUS):
             changed = self._parse_earphone_status(payload)
+        elif cmd_id == _CMD_HOST_VERSION:
+            ver = payload.decode(errors="replace").strip("\x00").strip()
+            if ver and ver != self.state.firmware_version:
+                self.state.firmware_version = ver
+                print(f"[protocol] firmware={ver!r}")
+                changed = True
+        elif cmd_id == _CMD_REMOTE_CONF:
+            sn = payload.decode(errors="replace").strip("\x00").strip()
+            if sn and sn != self.state.serial_number:
+                self.state.serial_number = sn
+                print(f"[protocol] serial={sn!r}")
+                changed = True
         elif cmd_id == _CMD_SET_NOISE_RED:
             print(f"[RX INFO] ANC set ACK: {payload.hex()}")
         elif cmd_id == _CMD_SET_EQ:
@@ -531,6 +543,8 @@ class NothingDevice(GObject.Object):
             self._x55_send(_CMD_BATTERY)
             self._x55_send(_CMD_NOISE_RED, bytes([0x03]))
             self._x55_send(_CMD_EARPHONE)
+            self._x55_send(_CMD_HOST_VERSION)
+            self._x55_send(_CMD_REMOTE_CONF)
         return False
 
     def _handle_disconnect(self):

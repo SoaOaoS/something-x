@@ -1,12 +1,12 @@
-@define-color window_bg_color #0a0a0a;
+@define-color window_bg_color #000000;
 @define-color window_fg_color #ffffff;
-@define-color view_bg_color #0a0a0a;
+@define-color view_bg_color #000000;
 @define-color view_fg_color #ffffff;
-@define-color headerbar_bg_color #0a0a0a;
+@define-color headerbar_bg_color #000000;
 @define-color headerbar_fg_color #ffffff;
-@define-color headerbar_border_color #1e1e1e;
-@define-color headerbar_backdrop_color #0a0a0a;
-@define-color card_bg_color #111111;
+@define-color headerbar_border_color rgba(255,255,255,0.07);
+@define-color headerbar_backdrop_color #000000;
+@define-color card_bg_color rgba(255,255,255,0.04);
 @define-color card_fg_color #ffffff;
 @define-color accent_bg_color #e83535;
 @define-color accent_fg_color #ffffff;
@@ -16,45 +16,56 @@
 @define-color success_bg_color #8fdf72;
 @define-color success_fg_color #0a0a0a;
 
+/* ── Splash ──────────────────────────────────────────────────────────────── */
+
+.splash-window,
+.splash-window > * {
+    background-color: #000000;
+}
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+
 window,
 .background {
-    background-color: #0a0a0a;
+    background-color: #000000;
     color: #ffffff;
 }
 
 scrolledwindow,
 viewport {
-    background-color: #0a0a0a;
+    background-color: #000000;
 }
 
 scrollbar trough {
-    background-color: #141414;
-    border-radius: 4px;
-    min-width: 4px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border-radius: 3px;
+    min-width: 3px;
 }
 scrollbar slider {
-    background-color: #2e2e2e;
-    border-radius: 4px;
-    min-width: 4px;
-    min-height: 40px;
+    background-color: rgba(255, 255, 255, 0.10);
+    border-radius: 3px;
+    min-width: 3px;
+    min-height: 48px;
 }
-scrollbar slider:hover { background-color: #3e3e3e; }
+scrollbar slider:hover { background-color: rgba(255, 255, 255, 0.18); }
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
 
 headerbar,
 .nothing-header {
-    background-color: #0a0a0a;
-    border-bottom: 1px solid #181818;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, #000000 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     color: #ffffff;
-    min-height: 54px;
+    min-height: 56px;
     box-shadow: none;
-    padding: 0 8px;
+    padding: 0 10px;
 }
 
 headerbar .title {
-    font-family: "JetBrains Mono", "Courier New", monospace;
+    font-family: "JetBrains Mono", monospace;
     font-weight: 700;
-    font-size: 13px;
-    letter-spacing: 4px;
+    font-size: 11px;
+    letter-spacing: 5px;
     text-transform: uppercase;
     color: #ffffff;
 }
@@ -64,48 +75,72 @@ headerbar button.flat {
     background: none;
     border: none;
     box-shadow: none;
-    color: #888888;
-    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.4);
+    border-radius: 10px;
     min-width: 36px;
     min-height: 36px;
     padding: 4px 8px;
     transition: background 150ms ease, color 150ms ease;
 }
-headerbar button:hover { background-color: #1a1a1a; color: #ffffff; }
-headerbar button:active { background-color: #242424; color: #ffffff; }
-
-.nothing-page {
-    background-color: #0a0a0a;
-    padding: 0 16px 24px;
+headerbar button:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.85);
+}
+headerbar button:active {
+    background-color: rgba(255, 255, 255, 0.11);
+    color: #ffffff;
 }
 
-/* ── Typography ──────────────────────────────────────────────────────────── */
+/* ── Page ────────────────────────────────────────────────────────────────── */
+
+.nothing-page {
+    background-color: #000000;
+    padding: 0 18px 40px;
+}
+
+/* ── Section labels ──────────────────────────────────────────────────────── */
 
 .section-label {
     font-family: "JetBrains Mono", monospace;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
-    letter-spacing: 3px;
+    letter-spacing: 4px;
     text-transform: uppercase;
-    color: #444444;
-    padding: 0 4px;
-    margin-top: 28px;
-    margin-bottom: 10px;
+    color: rgba(255, 255, 255, 0.25);
+    padding: 0 2px;
+    margin-top: 36px;
+    margin-bottom: 14px;
 }
+
+/* ── Device list row wrapper ─────────────────────────────────────────────── */
+
+.device-row-btn {
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    border-radius: 24px;
+}
+.device-row-btn:hover,
+.device-row-btn:focus { background: none; box-shadow: none; }
 
 /* ── Device list cards ───────────────────────────────────────────────────── */
 
 .device-card {
-    background-color: #111111;
-    border-radius: 20px;
-    border: 1px solid #1e1e1e;
-    padding: 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 22px;
     margin-bottom: 8px;
-    transition: background 150ms ease, border-color 150ms ease;
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
 }
 .device-card:hover {
-    background-color: #161616;
-    border-color: #2a2a2a;
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.13);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7),
+                inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
 .device-card-name {
@@ -113,56 +148,56 @@ headerbar button:active { background-color: #242424; color: #ffffff; }
     font-size: 16px;
     font-weight: 700;
     color: #ffffff;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
 }
-
 .device-card-address {
     font-family: "JetBrains Mono", monospace;
-    font-size: 11px;
-    color: #3e3e3e;
-    letter-spacing: 1px;
-    margin-top: 2px;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.2);
+    letter-spacing: 1.5px;
+    margin-top: 4px;
 }
 
 .status-connected {
     font-family: "JetBrains Mono", monospace;
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 10px;
+    font-weight: 700;
     color: #8fdf72;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
 }
 .status-disconnected {
     font-family: "JetBrains Mono", monospace;
-    font-size: 11px;
-    color: #3a3a3a;
-    letter-spacing: 1px;
-}
-.status-nothing {
-    font-family: "JetBrains Mono", monospace;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: #e83535;
-    background-color: #160808;
-    border: 1px solid #3a1212;
-    border-radius: 6px;
-    padding: 3px 8px;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.18);
+    letter-spacing: 1.5px;
 }
 
-/* ── Battery indicators ──────────────────────────────────────────────────── */
+.status-nothing {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #e83535;
+    background: rgba(232, 53, 53, 0.1);
+    border: 1px solid rgba(232, 53, 53, 0.22);
+    border-radius: 6px;
+    padding: 3px 9px;
+}
+
+/* ── Battery progress ────────────────────────────────────────────────────── */
 
 progressbar,
 progressbar trough {
-    background-color: #1e1e1e;
+    background-color: rgba(255, 255, 255, 0.07);
     border-radius: 4px;
-    min-height: 5px;
+    min-height: 4px;
     border: none;
 }
 progressbar progress {
     background-color: #e83535;
     border-radius: 4px;
-    min-height: 5px;
+    min-height: 4px;
 }
 progressbar.battery-high progress { background-color: #8fdf72; }
 progressbar.battery-mid  progress { background-color: #f0c040; }
@@ -177,9 +212,9 @@ progressbar.battery-low  progress { background-color: #e85252; }
 }
 .battery-label-small {
     font-family: "JetBrains Mono", monospace;
-    font-size: 10px;
+    font-size: 9px;
     letter-spacing: 2px;
-    color: #3a3a3a;
+    color: rgba(255, 255, 255, 0.22);
     text-transform: uppercase;
 }
 .battery-pct-big {
@@ -192,245 +227,304 @@ progressbar.battery-low  progress { background-color: #e85252; }
 .battery-unit {
     font-family: "JetBrains Mono", monospace;
     font-size: 18px;
-    color: #4a4a4a;
+    color: rgba(255, 255, 255, 0.28);
     margin-bottom: 8px;
 }
 
-/* ── Sound mode buttons ──────────────────────────────────────────────────── */
+/* ── Sound mode — segmented control ─────────────────────────────────────── */
 
 .anc-container {
-    background-color: #111111;
-    border-radius: 16px;
-    border: 1px solid #1e1e1e;
+    background: rgba(255, 255, 255, 0.035);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
     padding: 4px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .anc-button {
     background: none;
     border: none;
     box-shadow: none;
-    border-radius: 12px;
-    color: #555555;
-    font-size: 13px;
+    border-radius: 16px;
+    color: rgba(255, 255, 255, 0.3);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
     font-weight: 600;
-    padding: 10px 16px;
-    transition: all 180ms ease;
-    letter-spacing: 0.3px;
+    padding: 11px 14px;
+    transition: all 220ms ease;
+    letter-spacing: 0.2px;
 }
 .anc-button:hover {
-    background-color: #1a1a1a;
-    color: #aaaaaa;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.65);
 }
 .anc-button.active,
 .anc-button:checked {
-    background-color: #e83535;
+    background: linear-gradient(160deg, #e83535 0%, #c02424 100%);
     color: #ffffff;
     font-weight: 700;
+    box-shadow: 0 2px 20px rgba(232, 53, 53, 0.55),
+                inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 .anc-button.active label,
-.anc-button:checked label {
-    color: #ffffff;
-}
+.anc-button:checked label { color: #ffffff; }
 .anc-button.active:hover,
 .anc-button:checked:hover {
-    background-color: #d02b2b;
-    color: #ffffff;
+    background: linear-gradient(160deg, #f04040 0%, #cc2c2c 100%);
 }
 
-/* ── EQ preset buttons ───────────────────────────────────────────────────── */
+/* ── EQ preset pills ─────────────────────────────────────────────────────── */
 
 .eq-button {
-    background-color: #111111;
-    border: 1px solid #1e1e1e;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: none;
-    border-radius: 24px;
-    color: #555555;
-    font-size: 13px;
+    border-radius: 100px;
+    color: rgba(255, 255, 255, 0.38);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
     font-weight: 600;
-    padding: 9px 18px;
-    transition: all 180ms ease;
-    letter-spacing: 0.3px;
+    padding: 10px 20px;
+    transition: all 220ms ease;
+    letter-spacing: 0.2px;
 }
 .eq-button:hover {
-    background-color: #1a1a1a;
-    border-color: #2a2a2a;
-    color: #aaaaaa;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.13);
+    color: rgba(255, 255, 255, 0.72);
 }
 .eq-button.active,
 .eq-button:checked {
-    background-color: #e83535;
-    border-color: #e83535;
+    background: linear-gradient(160deg, #e83535 0%, #c02424 100%);
+    border-color: transparent;
     color: #ffffff;
     font-weight: 700;
+    box-shadow: 0 2px 20px rgba(232, 53, 53, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 .eq-button.active label,
-.eq-button:checked label {
-    color: #ffffff;
-}
+.eq-button:checked label { color: #ffffff; }
 .eq-button.active:hover,
 .eq-button:checked:hover {
-    background-color: #d02b2b;
-    border-color: #d02b2b;
-    color: #ffffff;
+    background: linear-gradient(160deg, #f04040 0%, #cc2c2c 100%);
+}
+
+/* ── Volume slider ───────────────────────────────────────────────────────── */
+
+scale trough {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    min-height: 5px;
+    border: none;
+}
+scale trough highlight {
+    background: linear-gradient(90deg, #c42424 0%, #e83535 100%);
+    border-radius: 8px;
+}
+scale slider {
+    background-color: #ffffff;
+    border-radius: 50%;
+    min-width: 22px;
+    min-height: 22px;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+scale slider:hover { background-color: #eeeeee; }
+scale slider:active {
+    background-color: #dddddd;
+    box-shadow: 0 0 0 6px rgba(232, 53, 53, 0.18), 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+.volume-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.45);
+    min-width: 42px;
 }
 
 /* ── Settings group ──────────────────────────────────────────────────────── */
 
 .settings-group {
-    background-color: #111111;
-    border-radius: 18px;
-    border: 1px solid #1e1e1e;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 4px 28px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .settings-row {
     background-color: transparent;
-    padding: 16px 20px;
-    border-bottom: 1px solid #181818;
+    padding: 17px 22px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 .settings-row:last-child { border-bottom: none; }
 
 .settings-row-title {
     font-size: 15px;
     font-weight: 500;
-    color: #e8e8e8;
+    color: rgba(255, 255, 255, 0.88);
 }
 .settings-row-subtitle {
     font-size: 12px;
-    color: #555555;
+    color: rgba(255, 255, 255, 0.28);
     margin-top: 3px;
 }
 
 switch {
-    background-color: #222222;
+    background-color: rgba(255, 255, 255, 0.10);
     border-radius: 20px;
-    min-width: 48px;
-    min-height: 26px;
+    min-width: 50px;
+    min-height: 28px;
     border: none;
-    box-shadow: none;
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
     transition: background 200ms ease;
 }
-switch:checked { background-color: #e83535; }
-switch slider {
-    background-color: #4a4a4a;
-    border-radius: 50%;
-    min-width: 20px;
-    min-height: 20px;
-    margin: 3px;
-    box-shadow: none;
+switch:checked {
+    background-color: #e83535;
+    box-shadow: 0 0 14px rgba(232, 53, 53, 0.45);
 }
-switch:checked slider { background-color: #ffffff; }
+switch slider {
+    background-color: rgba(255, 255, 255, 0.55);
+    border-radius: 50%;
+    min-width: 22px;
+    min-height: 22px;
+    margin: 3px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+switch:checked slider {
+    background-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
 
 /* ── Device info ─────────────────────────────────────────────────────────── */
 
 .info-key {
     font-family: "JetBrains Mono", monospace;
-    font-size: 11px;
+    font-size: 10px;
     letter-spacing: 2px;
     text-transform: uppercase;
-    color: #3e3e3e;
+    color: rgba(255, 255, 255, 0.18);
 }
 .info-value {
     font-family: "JetBrains Mono", monospace;
     font-size: 13px;
     font-weight: 600;
-    color: #777777;
-    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.45);
+    letter-spacing: 0.3px;
 }
 
 /* ── Action buttons ──────────────────────────────────────────────────────── */
 
 .scan-button {
-    background-color: #e83535;
-    border-radius: 16px;
+    background: linear-gradient(160deg, #e83535 0%, #c42424 100%);
+    border-radius: 100px;
     color: #ffffff;
+    font-family: "JetBrains Mono", monospace;
     font-weight: 700;
-    font-size: 14px;
-    padding: 14px 40px;
+    font-size: 12px;
+    padding: 17px 52px;
     border: none;
-    box-shadow: none;
-    letter-spacing: 1.5px;
-    transition: background 150ms ease;
+    box-shadow: 0 4px 28px rgba(232, 53, 53, 0.55),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    letter-spacing: 2px;
+    transition: all 200ms ease;
 }
 .scan-button label { color: #ffffff; }
-.scan-button:hover { background-color: #d02b2b; }
-.scan-button:active { background-color: #b52424; }
+.scan-button:hover {
+    background: linear-gradient(160deg, #f04040 0%, #cc2c2c 100%);
+    box-shadow: 0 6px 36px rgba(232, 53, 53, 0.65),
+                inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.scan-button:active {
+    background: linear-gradient(160deg, #c42424 0%, #a81e1e 100%);
+    box-shadow: 0 2px 14px rgba(232, 53, 53, 0.4);
+}
 
 .disconnect-button {
-    background-color: transparent;
-    border-radius: 16px;
-    color: #cc3333;
+    background: rgba(232, 53, 53, 0.07);
+    border-radius: 100px;
+    color: rgba(232, 53, 53, 0.75);
+    font-family: "JetBrains Mono", monospace;
     font-weight: 700;
-    font-size: 14px;
-    padding: 14px 32px;
-    border: 1px solid #2e1212;
+    font-size: 12px;
+    padding: 16px 40px;
+    border: 1px solid rgba(232, 53, 53, 0.18);
     box-shadow: none;
-    letter-spacing: 1px;
-    transition: all 150ms ease;
+    letter-spacing: 2px;
+    transition: all 200ms ease;
 }
-.disconnect-button label { color: #cc3333; }
+.disconnect-button label { color: rgba(232, 53, 53, 0.75); }
 .disconnect-button:hover {
-    background-color: #160a0a;
-    border-color: #4a1c1c;
+    background: rgba(232, 53, 53, 0.13);
+    border-color: rgba(232, 53, 53, 0.32);
     color: #e83535;
+    box-shadow: 0 0 20px rgba(232, 53, 53, 0.15);
 }
 .disconnect-button:hover label { color: #e83535; }
 
 .connect-button {
-    background-color: transparent;
-    border-radius: 16px;
-    color: #e83535;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 100px;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: "JetBrains Mono", monospace;
     font-weight: 700;
-    font-size: 14px;
-    padding: 14px 32px;
-    border: 1px solid #3a1212;
-    box-shadow: none;
-    letter-spacing: 1px;
-    transition: all 150ms ease;
+    font-size: 12px;
+    padding: 16px 40px;
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    letter-spacing: 2px;
+    transition: all 200ms ease;
 }
-.connect-button label { color: #e83535; }
+.connect-button label { color: rgba(255, 255, 255, 0.6); }
 .connect-button:hover {
-    background-color: #160808;
-    border-color: #5e1c1c;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.9);
 }
+.connect-button:hover label { color: rgba(255, 255, 255, 0.9); }
 
 .connecting-button {
-    background-color: transparent;
-    border-radius: 16px;
-    color: #444444;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 100px;
+    color: rgba(255, 255, 255, 0.22);
+    font-family: "JetBrains Mono", monospace;
     font-weight: 700;
-    font-size: 14px;
-    padding: 14px 32px;
-    border: 1px solid #222222;
+    font-size: 12px;
+    padding: 16px 40px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     box-shadow: none;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
 }
-.connecting-button label { color: #444444; }
+.connecting-button label { color: rgba(255, 255, 255, 0.22); }
 
 /* ── Empty state ─────────────────────────────────────────────────────────── */
 
 .empty-title {
     font-family: "JetBrains Mono", monospace;
-    font-size: 13px;
+    font-size: 10px;
     font-weight: 700;
-    letter-spacing: 3px;
+    letter-spacing: 4px;
     text-transform: uppercase;
-    color: #282828;
+    color: rgba(255, 255, 255, 0.10);
 }
 .empty-subtitle {
     font-size: 13px;
-    color: #303030;
-    margin-top: 4px;
+    color: rgba(255, 255, 255, 0.18);
+    margin-top: 8px;
 }
 
-/* ── Brand elements ──────────────────────────────────────────────────────── */
+/* ── Nothing brand ───────────────────────────────────────────────────────── */
 
 .nothing-dot {
     background-color: #e83535;
     border-radius: 50%;
-    min-width: 8px;
-    min-height: 8px;
+    min-width: 6px;
+    min-height: 6px;
+    box-shadow: 0 0 8px rgba(232, 53, 53, 0.7);
 }
 
-separator { background-color: #181818; }
+separator { background-color: rgba(255, 255, 255, 0.05); }
 
 label { color: #ffffff; }

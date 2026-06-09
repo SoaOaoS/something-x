@@ -189,6 +189,7 @@ class HomePage(Gtk.Box):
     def _make_row(self, device: BluetoothDevice) -> Gtk.Button:
         btn = Gtk.Button()
         btn.set_has_frame(False)
+        btn.add_css_class("device-row-btn")
         row = DeviceRow(device)
         btn.set_child(row)
         btn.connect("clicked", lambda _b, d=device: self.emit("device-selected", d))
