@@ -1,3 +1,5 @@
+<div align="center">
+
 # Something X
 
 **A Linux-native companion app for Nothing and CMF Bluetooth devices.**  
