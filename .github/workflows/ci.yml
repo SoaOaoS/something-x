@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  pull-requests: write  # needed for reviewdog to post inline comments
+
 jobs:
   lint:
     name: Lint & format
@@ -21,8 +25,14 @@ jobs:
       - name: Install ruff
         run: pip install ruff
 
-      - name: Check lint
-        run: ruff check nothing_app/
+      # Posts inline review comments on the PR diff for every ruff finding
+      - uses: reviewdog/action-ruff@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review      # inline comments on the diff
+          level: error
+          ruff_args: nothing_app/
 
+      # Still fail the job if formatting is wrong (reviewdog doesn't cover format)
       - name: Check formatting
         run: ruff format --check nothing_app/
