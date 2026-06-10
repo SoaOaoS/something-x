@@ -59,8 +59,8 @@ headerbar .title {
     color: #ffffff;
 }
 
-headerbar button,
-headerbar button.flat {
+headerbar button:not(.close):not(.minimize):not(.maximize),
+headerbar button.flat:not(.close):not(.minimize):not(.maximize) {
     background: none;
     border: none;
     box-shadow: none;
@@ -71,8 +71,8 @@ headerbar button.flat {
     padding: 4px 8px;
     transition: background 150ms ease;
 }
-headerbar button:hover { background-color: #1e1e1e; }
-headerbar button:active { background-color: #2a2a2a; }
+headerbar button:not(.close):not(.minimize):not(.maximize):hover { background-color: #1e1e1e; }
+headerbar button:not(.close):not(.minimize):not(.maximize):active { background-color: #2a2a2a; }
 
 .nothing-page {
     background-color: #0a0a0a;
