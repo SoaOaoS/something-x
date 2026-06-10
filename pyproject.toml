@@ -39,3 +39,16 @@ include = ["nothing_app*"]
 
 [tool.setuptools.package-data]
 nothing_app = ["data/*.css", "data/*.desktop"]
+
+[project.optional-dependencies]
+dev = ["ruff"]
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+    "E402",  # module-level import not at top — required by gi.require_version() pattern
+    "I001",  # import sort — same reason
+]
