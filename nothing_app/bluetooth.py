@@ -44,6 +44,40 @@ class BluetoothDevice:
         return f"<BTDevice {self.name!r} {'●' if self.connected else '○'}>"
 
 
+# BlueZ Device1.Icon → GTK symbolic icon name
+_BLUEZ_ICON_MAP: dict[str, str] = {
+    "audio-headphones": "audio-headphones-symbolic",
+    "audio-headset": "audio-headset-symbolic",
+    "audio-card": "audio-card-symbolic",
+    "input-mouse": "input-mouse-symbolic",
+    "input-keyboard": "input-keyboard-symbolic",
+    "input-gaming": "input-gaming-symbolic",
+    "input-tablet": "input-tablet-symbolic",
+    "phone": "phone-symbolic",
+    "computer": "computer-symbolic",
+    "printer": "printer-symbolic",
+}
+
+_WATCH_NAME_PATTERNS = ("watch", "band", "gear", "amazfit", "fenix", "vivoactive", "galaxy fit")
+
+
+def device_icon_name(device: "BluetoothDevice | None") -> str:
+    """Return a GTK symbolic icon name for a Bluetooth device."""
+    if device is None:
+        return "audio-headphones-symbolic"
+    name_lower = device.name.lower()
+    if any(p in name_lower for p in _WATCH_NAME_PATTERNS):
+        return "alarm-symbolic"
+    if "ear (stick)" in name_lower:
+        return "audio-input-microphone-symbolic"
+    mapped = _BLUEZ_ICON_MAP.get(device.icon)
+    if mapped:
+        return mapped
+    if "phone" in name_lower:
+        return "phone-symbolic"
+    return "audio-headphones-symbolic"
+
+
 class BluetoothManager(GObject.Object):
     __gsignals__ = {
         "devices-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),

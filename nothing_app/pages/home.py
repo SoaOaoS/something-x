@@ -3,7 +3,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, GLib, GObject
 
-from ..bluetooth import BluetoothDevice, BluetoothManager
+from ..bluetooth import BluetoothDevice, BluetoothManager, device_icon_name
 
 
 class DeviceRow(Gtk.Box):
@@ -14,12 +14,7 @@ class DeviceRow(Gtk.Box):
         self._build()
 
     def _build(self):
-        icon_name = "audio-headphones-symbolic"
-        if "phone" in self.device.name.lower():
-            icon_name = "phone-symbolic"
-        elif "ear (stick)" in self.device.name.lower():
-            icon_name = "audio-input-microphone-symbolic"
-        icon = Gtk.Image.new_from_icon_name(icon_name)
+        icon = Gtk.Image.new_from_icon_name(device_icon_name(self.device))
         icon.set_pixel_size(28)
         icon.set_opacity(0.6)
         self.append(icon)
