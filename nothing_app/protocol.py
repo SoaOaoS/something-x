@@ -417,6 +417,8 @@ class NothingDevice(GObject.Object):
             GLib.timeout_add(3000, self._activation_fallback)
         elif cmd_id == _CMD_SET_ACTIVATED:
             _log(f"[RX INFO] activation ACK payload={payload.hex()}")
+            if not self._activated:
+                GLib.timeout_add(2000, self._poll_earphone_status)
             self._activated = True
             from . import profiles
 
@@ -433,8 +435,15 @@ class NothingDevice(GObject.Object):
             changed = self._parse_battery(payload)
         elif cmd_id in (_CMD_NOISE_RED, _EVT_NOISE_RED):
             changed = self._parse_anc(payload)
-        elif cmd_id in (_CMD_EARPHONE, _EVT_STATUS):
+        elif cmd_id == _CMD_EARPHONE:
             changed = self._parse_earphone_status(payload)
+        elif cmd_id == _EVT_STATUS:
+            # The pushed event only carries accurate data for the bud that
+            # changed; the other entries are stale placeholders. Use it purely
+            # as a trigger and re-query for a fresh full snapshot.
+            if _DEBUG:
+                _log(f"[protocol] EVT_STATUS {payload.hex()} → re-query GET_EARPHONE")
+            self._x55_send(_CMD_EARPHONE)
         elif cmd_id == _CMD_HOST_VERSION:
             ver = payload.decode(errors="replace").strip("\x00").strip()
             if ver and ver != self.state.firmware_version:
@@ -512,26 +521,29 @@ class NothingDevice(GObject.Object):
         return changed
 
     def _parse_earphone_status(self, payload: bytes) -> bool:
-        # payload: [count:1][type:1][val:1]...
-        # EarphoneStatus.java: bit2=inEar, bit7=isConnect, bit0=inCase/caseOpen
-        # type: 2=left, 3=right, 4=case
+        # payload: [count:1][type:1][val:1]...  (only GET responses reach here;
+        # they are a fresh full snapshot, unlike the EVT push frames)
+        # EarphoneStatus.java: bit0=inCase, bit2=inEar, bit7=isConnect
+        # type: 2=left, 3=right, 4=case, 5=tws, 6=stereo
         if len(payload) < 3:
             return False
         count = payload[0]
         changed = False
+        if _DEBUG:
+            _log(f"[protocol] earphone raw={payload.hex()}")
         for i in range(1, 1 + count * 2, 2):
             if i + 1 >= len(payload):
                 break
             etype = payload[i]
             val = payload[i + 1]
+            if etype not in (2, 3):
+                continue
             in_ear = bool(val & 0x04)
-            connected = bool(val & 0x80)
-            wearing = in_ear and connected
-            if etype == 2 and wearing != self.state.left_wearing:
-                self.state.left_wearing = wearing
+            if etype == 2 and in_ear != self.state.left_wearing:
+                self.state.left_wearing = in_ear
                 changed = True
-            elif etype == 3 and wearing != self.state.right_wearing:
-                self.state.right_wearing = wearing
+            elif etype == 3 and in_ear != self.state.right_wearing:
+                self.state.right_wearing = in_ear
                 changed = True
         if changed:
             _log(f"[protocol] wearing L={self.state.left_wearing} R={self.state.right_wearing}")
@@ -626,10 +638,20 @@ class NothingDevice(GObject.Object):
         elif pct > 25:
             self._low_bat_notified.discard(slot)
 
+    def _poll_earphone_status(self):
+        # The firmware only computes a fresh per-bud snapshot when asked; the
+        # pushed EVT frames carry stale placeholder entries for the bud that
+        # didn't change. Polling keeps both buds' wearing state accurate.
+        if not self._rfcomm_connected:
+            return False
+        self._x55_send(_CMD_EARPHONE)
+        return True
+
     def _activation_fallback(self):
         if not self._activated and self._rfcomm_connected:
             _log("[protocol] activation ACK not received within 3s — sending GET queries")
             self._activated = True
+            GLib.timeout_add(2000, self._poll_earphone_status)
             self._x55_send(_CMD_BATTERY)
             self._x55_send(_CMD_NOISE_RED, bytes([0x03]))
             self._x55_send(_CMD_EARPHONE)
