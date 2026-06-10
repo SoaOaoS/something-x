@@ -1,144 +1,194 @@
-# Something X — for Linux
-
-> A Linux-native companion app for **Nothing** and **CMF** Bluetooth devices.  
-> Built for [Omarchy](https://omarchy.org) (Hyprland / Wayland) — pure black, JetBrains Mono, Nothing Red.
+<div align="center">
 
 ```
   ●  SOMETHING X
      FOR LINUX
 ```
 
-[![PyPI](https://img.shields.io/pypi/v/something-x)](https://pypi.org/project/something-x/)
+# Something X
+
+**A Linux-native companion app for Nothing and CMF Bluetooth devices.**  
+Built for [Omarchy](https://omarchy.org) · GTK4 · Pure black · JetBrains Mono · Nothing Red
+
+[![PyPI](https://img.shields.io/pypi/v/something-x?color=red)](https://pypi.org/project/something-x/)
+[![AUR](https://img.shields.io/aur/version/something-x?color=red)](https://aur.archlinux.org/packages/something-x)
 [![License: MIT](https://img.shields.io/badge/license-MIT-red.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Linux-blue)](https://github.com/SoaOaoS/something-x)
+[![Platform](https://img.shields.io/badge/platform-Linux-lightgrey)](https://github.com/SoaOaoS/something-x)
+
+</div>
 
 ---
 
 ## Features
 
-- **Animated splash screen** — Nothing-branded intro with typewriter effect and ripple rings
-- **Earbud visual** — Cairo-rendered glowing battery rings with radial gradients for L / R / Case
-- **ANC control** — Off · Noise Cancellation · Transparency (real RFCOMM protocol)
-- **EQ presets** — Balanced · More Bass · More Treble · Voice
-- **Volume slider** — controls the PulseAudio/PipeWire A2DP sink directly
-- **Per-device profiles** — ANC and EQ saved per device, restored automatically on reconnect
-- **Background mode** — closing the window keeps the app running; relaunch to reopen
-- **CLI quick-toggles** — control your earbuds without opening the GUI (see [CLI usage](#cli-usage))
-- **Low battery notifications** — `notify-send` alert when any bud drops below 20 %
-- **Firmware version & serial number** — read from the device over RFCOMM
-- **In-ear detection toggle**
-- **Device discovery** — BlueZ D-Bus; Nothing/CMF devices highlighted with a badge
-- **Scan for new devices** — 30 s BlueZ discovery window
-- **Glass morphism UI** — pure black base, frosted glass cards, red gradient accents
+| | Feature | Details |
+|---|---|---|
+| 🎧 | **Earbud visual** | Cairo-rendered glowing battery rings for L / R / Case, live updates |
+| 🔇 | **ANC control** | Off · Noise Cancellation · Transparency over real RFCOMM protocol |
+| 🎵 | **EQ presets** | Balanced · More Bass · More Treble · Voice |
+| 🔊 | **Volume slider** | Direct PulseAudio / PipeWire A2DP sink control via `pactl` |
+| 💾 | **Per-device profiles** | ANC + EQ saved per device address, restored automatically on reconnect |
+| 🔋 | **Battery notifications** | Desktop alerts at 20 %, 15 %, 10 %, and 5 % per earbud and case |
+| 🔗 | **Auto-connect RFCOMM** | Connects to the device protocol as soon as BlueZ reports it paired |
+| 🏃 | **Background mode** | Closing the window keeps the app running; relaunch to reopen |
+| 💻 | **CLI** | Control your earbuds from the terminal without opening the GUI |
+| 📱 | **Device discovery** | BlueZ D-Bus scan with Nothing / CMF devices highlighted |
+| ℹ️ | **Device info** | Firmware version and serial number read over RFCOMM |
 
 ---
 
 ## Device support
 
-| Device | Discovery | Battery | ANC | EQ | Volume | Firmware |
-|---|---|---|---|---|---|---|
-| Nothing Ear (1) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Nothing Ear (2) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Nothing Ear (a) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Nothing Ear (stick) | ✅ | ✅ | — | ✅ | ✅ | ✅ |
-| CMF Buds / Buds Pro | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Nothing Phone (1/2) | ✅ | — | — | — | — | — |
-| Other BT devices | ✅ | ✅* | — | — | ✅ | — |
+| Device | Battery | ANC | EQ | Volume | Firmware |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Nothing Ear (1) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Nothing Ear (2) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Nothing Ear (a) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Nothing Ear (stick) | ✅ | — | ✅ | ✅ | ✅ |
+| CMF Buds / Buds Pro | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Nothing Phone (1/2) | ✅ | — | — | — | — |
+| Other Bluetooth devices | ✅* | — | — | ✅ | — |
 
-\* via BlueZ `Battery1` interface · RFCOMM features require the device to be connected
-
----
-
-## Requirements
-
-### System packages (Arch / Omarchy)
-
-```bash
-sudo pacman -S python-gobject python-dbus python-cairo gtk4 libadwaita
-```
-
-| Package | Purpose |
-|---|---|
-| `python-gobject` | GTK4, libadwaita, GLib bindings |
-| `python-dbus` | BlueZ D-Bus access |
-| `python-cairo` | Cairo drawing (earbud visual, splash) |
-| `gtk4` | UI toolkit |
-| `libadwaita` | Navigation, dark theme |
-
-> `pactl` (from `libpulse` / `pipewire-pulse`) is used for volume control — already present on any PulseAudio/PipeWire system.
+<sub>* via BlueZ `Battery1` interface · RFCOMM features require an active connection</sub>
 
 ---
 
 ## Installation
 
-### Recommended — pip (after system packages above)
+### Arch / Omarchy (recommended)
+
+Install system dependencies first:
+
+```bash
+sudo pacman -S python-gobject python-dbus python-cairo gtk4 libadwaita
+```
+
+Then install from **AUR**:
+
+```bash
+yay -S something-x
+# or: paru -S something-x
+```
+
+Or via **pip**:
 
 ```bash
 pip install something-x
-something-x
 ```
+
+### Other distros
+
+<details>
+<summary>Ubuntu 24.04+</summary>
+
+```bash
+sudo apt install python3-gi python3-dbus python3-cairo gir1.2-gtk-4.0 gir1.2-adw-1
+pip install something-x
+```
+
+</details>
+
+<details>
+<summary>Fedora 39+</summary>
+
+```bash
+sudo dnf install python3-gobject python3-dbus python3-cairo gtk4 libadwaita
+pip install something-x
+```
+
+</details>
+
+<details>
+<summary>NixOS</summary>
+
+```bash
+nix run github:SoaOaoS/something-x
+```
+
+A `flake.nix` is included for reproducible builds.
+
+</details>
 
 ### Run from source
 
 ```bash
 git clone https://github.com/SoaOaoS/something-x
 cd something-x
-./somethingx
-```
-
-### Desktop launcher (Walker / Rofi / app menu)
-
-```bash
-cp nothing_app/data/com.something.x.omarchy.desktop ~/.local/share/applications/
-update-desktop-database ~/.local/share/applications/
+pip install -e .
+something-x
 ```
 
 ---
 
 ## Usage
 
-```
-./somethingx        # from source
-something-x         # if installed via pip
+### GUI
+
+```bash
+something-x
 ```
 
-1. **Splash** — animated intro, main window opens after ~2.3 s
-2. **Home** — all paired BT devices; Nothing/CMF get a `NOTHING` badge
-3. **Scan** — "SCAN FOR DEVICES" runs 30 s BlueZ discovery
+1. **Splash** — animated intro, main window appears after ~2 s
+2. **Home** — lists all paired Bluetooth devices; Nothing / CMF devices get a `NOTHING` badge
+3. **Scan** — tap `SCAN FOR DEVICES` to run a 30 s BlueZ discovery
 4. **Device page** — tap a card to open controls:
    - Battery rings (L / R / Case) update in real time
-   - ANC and EQ apply immediately over RFCOMM; settings saved automatically
-   - Volume slider controls the A2DP sink via `pactl`
-   - Firmware and serial number shown after connection
-5. **Disconnect** — red button sends a clean BlueZ disconnect
-6. **Close** — hides to background; run `something-x` again to reopen
+   - ANC and EQ apply immediately over RFCOMM and are saved to your profile
+   - Volume slider drives the A2DP sink via `pactl`
+   - Firmware version and serial number appear after RFCOMM connects
+5. **Close** — hides to background; run `something-x` again to reopen
+
+### CLI
+
+Control your earbuds without opening the GUI:
+
+```bash
+# Battery levels
+something-x --battery
+
+# ANC mode
+something-x --anc off
+something-x --anc on
+something-x --anc transparency
+
+# EQ preset
+something-x --eq balanced
+something-x --eq bass
+something-x --eq treble
+something-x --eq voice
+
+# Combine
+something-x --anc on --eq bass
+
+# Target a specific device by address
+something-x --device AA:BB:CC:DD:EE:FF --battery
+```
 
 ---
 
-## CLI usage
+## Development releases
 
-After connecting to a device at least once via the GUI, you can control it from the terminal:
+The `develop` branch publishes pre-release builds to PyPI automatically as `something-x-dev`:
 
 ```bash
-something-x --battery                    # print battery levels
-something-x --anc off|on|transparency   # set ANC mode
-something-x --eq balanced|bass|treble|voice  # set EQ preset
-something-x --anc on --eq bass          # combine actions
-something-x --device AA:BB:CC:DD:EE:FF --battery  # target a specific device
+pip install something-x-dev
+something-x-dev
 ```
+
+Dev builds use version numbers like `1.3.0.dev42`. Not for production use.
 
 ---
 
 ## Releases & versioning
 
-This project uses **Conventional Commits**. Pushing to `main` triggers automatic versioning and a PyPI release:
+Pushing to `main` triggers automatic versioning, a GitHub Release, a PyPI publish, and an AUR update — all from Conventional Commits:
 
-| Commit prefix | Version bump | Example |
-|---|---|---|
-| `feat!:` / `BREAKING CHANGE` | Major (`x.0.0`) | `feat!: new protocol engine` |
-| `feat:` | Minor (`1.x.0`) | `feat: add Ear (open) support` |
-| `fix:` / `perf:` / `refactor:` | Patch (`1.0.x`) | `fix: ANC off not applying` |
-| `docs:` / `chore:` / `style:` / `ci:` | — (no release) | `chore: update readme` |
+| Commit prefix | Version bump |
+|---|---|
+| `feat!:` / `BREAKING CHANGE:` | Major `x.0.0` |
+| `feat:` | Minor `1.x.0` |
+| `fix:` / `perf:` / `refactor:` | Patch `1.0.x` |
+| `docs:` / `chore:` / `style:` / `ci:` / `test:` | No release |
 
 ---
 
@@ -146,33 +196,39 @@ This project uses **Conventional Commits**. Pushing to `main` triggers automatic
 
 ```
 nothing_app/
-├── application.py      Adw.Application — CSS, dark theme, splash, background mode, CLI
-├── splash.py           Animated splash screen (Cairo, typewriter, ripples)
-├── window.py           AdwNavigationView — home ↔ device routing
-├── bluetooth.py        BlueZ D-Bus manager (discovery, connect/disconnect signals)
-├── protocol.py         Nothing Ear RFCOMM 0x55 binary protocol (reverse-engineered)
-├── profiles.py         Per-device ANC/EQ profile persistence (~/.config/something-x/)
+├── application.py   Adw.Application — lifecycle, CSS, CLI arg handling, background mode
+├── window.py        AdwNavigationView — home ↔ device routing, RFCOMM auto-connect manager
+├── bluetooth.py     BlueZ D-Bus manager — device discovery, connect/disconnect signals
+├── protocol.py      Nothing Ear 0x55 RFCOMM protocol (reverse-engineered from APK)
+├── profiles.py      Per-device ANC/EQ persistence (~/.config/something-x/profiles.json)
+├── splash.py        Animated splash screen (Cairo, typewriter, ripple rings)
 ├── data/
-│   └── style.css       Nothing X glass-morphism CSS theme
+│   └── style.css    Glass-morphism CSS theme
 └── pages/
-    ├── home.py         Device list + scan button
-    └── device.py       ANC / EQ / volume / settings + Cairo earbud visual
+    ├── home.py      Device list + scan button
+    └── device.py    ANC / EQ / volume / settings + Cairo earbud visual
 ```
 
-### Protocol notes
+### Protocol
 
-Frame format: `[SOF=0x55][ctrl:2 LE][cmd:2 LE][len:2 LE][FSN:1][payload][crc16:2 LE]`
+Frame format: `[SOF=0x55][ctrl:2 LE][cmd:2 LE][len:2 LE][FSN:1][payload][CRC16:2 LE]`
 
-All outgoing frames use `ctrl=0x0160` with CRC16-ARC — the device silently drops SET commands if any frame in the session was sent without CRC.
+All outgoing frames use `ctrl=0x0160` with CRC16-ARC. The device silently drops SET commands if any frame in the session was sent without CRC.
+
+Enable raw frame logging:
+
+```bash
+SOMETHING_X_DEBUG=1 something-x
+```
 
 ---
 
 ## Contributing
 
-The RFCOMM protocol in [nothing_app/protocol.py](nothing_app/protocol.py) is reverse-engineered from the official Android APK. If your device uses different command IDs or channel numbers, patches are very welcome.
+The RFCOMM protocol in [`nothing_app/protocol.py`](nothing_app/protocol.py) is reverse-engineered from the official Android APK. If your device uses different command IDs, channels, or ANC values, patches are very welcome — please include the raw RFCOMM dump (`SOMETHING_X_DEBUG=1`) in your issue or PR.
 
 ---
 
 ## License
 
-MIT
+[MIT](LICENSE)
