@@ -8,6 +8,12 @@ from dataclasses import dataclass, field
 from gi.repository import GLib, GObject
 
 _DEBUG = bool(os.getenv("SOMETHING_X_DEBUG"))
+_QUIET = False
+
+
+def _log(*args, **kwargs):
+    if not _QUIET:
+        print(*args, **kwargs)
 
 # ── 0x55 protocol (from APK decompilation: Nothing Ear 3 / Donphan) ────────────
 #
@@ -153,13 +159,13 @@ class NothingDevice(GObject.Object):
                 sock, initial = result
                 self._sock = sock
                 self._rfcomm_connected = True
-                print(f"[protocol] using ch{ch}")
+                _log(f"[protocol] using ch{ch}")
                 GLib.idle_add(self.emit, "connected")
                 # The probe already sent GET_PROTOCOL_VERSION; the response is
                 # in `initial` and will trigger activation + queries inside recv_loop.
                 self._recv_loop(initial)
                 return
-            print(
+            _log(
                 f"[protocol] no responsive channel found for {self.address}\n"
                 "[protocol] tip: sudo usermod -aG bluetooth $USER and re-login"
             )
@@ -191,6 +197,8 @@ class NothingDevice(GObject.Object):
             GLib.source_remove(self._anc_debounce_id)
         self._anc_pending_mode = mode
         self._anc_debounce_id = GLib.timeout_add(300, self._do_set_anc)
+        from . import profiles
+        profiles.save(self.address, mode, self.state.eq_preset)
 
     def _do_set_anc(self):
         self._anc_debounce_id = None
@@ -210,6 +218,8 @@ class NothingDevice(GObject.Object):
             return
         eq_val = EQ_PRESETS.get(preset, 0)
         self._x55_send(_CMD_SET_EQ, bytes([eq_val]), label=f"EQ={preset}")
+        from . import profiles
+        profiles.save(self.address, self.state.anc_mode, preset)
 
     def set_in_ear_detection(self, enabled: bool):
         self.state.in_ear_detection = enabled
@@ -223,12 +233,12 @@ class NothingDevice(GObject.Object):
             services = pybluez.find_service(address=self.address)
             channels = [s["port"] for s in services if isinstance(s.get("port"), int)]
             if channels:
-                print(f"[protocol] PyBluez SDP channels: {channels}")
+                _log(f"[protocol] PyBluez SDP channels: {channels}")
                 return _prioritise(channels)
         except ImportError:
-            print("[protocol] PyBluez not installed; falling back to channel probe")
+            _log("[protocol] PyBluez not installed; falling back to channel probe")
         except Exception as exc:
-            print(f"[protocol] PyBluez SDP failed: {exc}")
+            _log(f"[protocol] PyBluez SDP failed: {exc}")
 
         try:
             out = subprocess.run(
@@ -244,15 +254,15 @@ class NothingDevice(GObject.Object):
                     except ValueError:
                         pass
             if channels:
-                print(f"[protocol] sdptool channels: {channels}")
+                _log(f"[protocol] sdptool channels: {channels}")
                 return _prioritise(channels)
-            print("[protocol] sdptool returned no channels")
+            _log("[protocol] sdptool returned no channels")
         except FileNotFoundError:
-            print("[protocol] sdptool not found; install bluez-utils or python-pybluez")
+            _log("[protocol] sdptool not found; install bluez-utils or python-pybluez")
         except Exception as exc:
-            print(f"[protocol] sdptool failed: {exc}")
+            _log(f"[protocol] sdptool failed: {exc}")
 
-        print(f"[protocol] probing channels {_PROBE_CHANNELS}")
+        _log(f"[protocol] probing channels {_PROBE_CHANNELS}")
         return _PROBE_CHANNELS
 
     def _try_channel(self, ch: int) -> tuple[socket.socket, bytes] | None:
@@ -267,11 +277,11 @@ class NothingDevice(GObject.Object):
             except OSError as exc:
                 import errno as _errno
                 if exc.errno == _errno.EBUSY and attempt == 0:
-                    print(f"[protocol] ch{ch}: busy — waiting 3s for stale connection to release")
+                    _log(f"[protocol] ch{ch}: busy — waiting 3s for stale connection to release")
                     sock.close()
                     time.sleep(3)
                     continue
-                print(f"[protocol] ch{ch}: connect failed: {exc}")
+                _log(f"[protocol] ch{ch}: connect failed: {exc}")
                 return None
         else:
             return None
@@ -301,13 +311,13 @@ class NothingDevice(GObject.Object):
             pass
 
         if not data:
-            print(f"[protocol] ch{ch}: no response (skipping)")
+            _log(f"[protocol] ch{ch}: no response (skipping)")
             sock.close()
             return None
 
         proto = "0x55" if data[0] == _SOF else (
                 "0x03-legacy" if data[0] == _L_DEV_HDR else f"0x{data[0]:02x}")
-        print(f"[protocol] ch{ch}: {proto} — {data.hex()}")
+        _log(f"[protocol] ch{ch}: {proto} — {data.hex()}")
         sock.settimeout(6)
         return sock, data
 
@@ -323,7 +333,7 @@ class NothingDevice(GObject.Object):
                 if not chunk:
                     break
                 if _DEBUG:
-                    print(f"[RX RAW] {chunk.hex()}")
+                    _log(f"[RX RAW] {chunk.hex()}")
                 buf += chunk
                 buf = self._process_buf(buf)
             except socket.timeout:
@@ -355,13 +365,13 @@ class NothingDevice(GObject.Object):
         header = struct.pack("<BHHH", _SOF, _CTRL_HOST_CRC, cmd_id, len(payload)) + bytes([self._fsn])
         frame = header + payload + struct.pack("<H", _crc16(header + payload))
         desc = f" ({label})" if label else f" {payload.hex()}" if payload else ""
-        print(f"[TX] cmd=0x{cmd_id:04X}{desc}")
+        _log(f"[TX] cmd=0x{cmd_id:04X}{desc}")
         if _DEBUG:
-            print(f"[TX RAW] {frame.hex()}")
+            _log(f"[TX RAW] {frame.hex()}")
         try:
             self._sock.sendall(frame)
         except OSError as exc:
-            print(f"[TX ERR] {exc}")
+            _log(f"[TX ERR] {exc}")
             self._handle_disconnect()
 
     def _process_x55(self, buf: bytes) -> bytes:
@@ -378,7 +388,7 @@ class NothingDevice(GObject.Object):
                 rx_crc = struct.unpack_from("<H", buf, 8 + length)[0]
                 ok_crc = _crc16(buf[:8 + length])
                 if rx_crc != ok_crc:
-                    print(f"[RX CRC ERR] got 0x{rx_crc:04X} expected 0x{ok_crc:04X}")
+                    _log(f"[RX CRC ERR] got 0x{rx_crc:04X} expected 0x{ok_crc:04X}")
             payload = buf[8:8 + length]
             cmd_id = cmd_raw | 0x8000   # normalize response→request ID
             self._dispatch_x55(cmd_id, payload)
@@ -389,12 +399,14 @@ class NothingDevice(GObject.Object):
         changed = False
         if cmd_id == _CMD_PROTO_VERSION:
             ver = payload.decode(errors="replace").strip()
-            print(f"[RX INFO] proto version={ver!r}")
+            _log(f"[RX INFO] proto version={ver!r}")
             self._x55_send(_CMD_SET_ACTIVATED)
             GLib.timeout_add(3000, self._activation_fallback)
         elif cmd_id == _CMD_SET_ACTIVATED:
-            print(f"[RX INFO] activation ACK payload={payload.hex()}")
+            _log(f"[RX INFO] activation ACK payload={payload.hex()}")
             self._activated = True
+            from . import profiles
+            profiles.set_last_device(self.address)
             # Always resend on real ACK — fallback may have sent queries before
             # the device finished activating and silently dropped them.
             self._x55_send(_CMD_BATTERY)
@@ -402,6 +414,7 @@ class NothingDevice(GObject.Object):
             self._x55_send(_CMD_EARPHONE)
             self._x55_send(_CMD_HOST_VERSION)
             self._x55_send(_CMD_REMOTE_CONF)
+            self._restore_profile()
         elif cmd_id in (_CMD_BATTERY, _EVT_BATTERY):
             changed = self._parse_battery(payload)
         elif cmd_id in (_CMD_NOISE_RED, _EVT_NOISE_RED):
@@ -412,20 +425,20 @@ class NothingDevice(GObject.Object):
             ver = payload.decode(errors="replace").strip("\x00").strip()
             if ver and ver != self.state.firmware_version:
                 self.state.firmware_version = ver
-                print(f"[protocol] firmware={ver!r}")
+                _log(f"[protocol] firmware={ver!r}")
                 changed = True
         elif cmd_id == _CMD_REMOTE_CONF:
             sn = payload.decode(errors="replace").strip("\x00").strip()
             if sn and sn != self.state.serial_number:
                 self.state.serial_number = sn
-                print(f"[protocol] serial={sn!r}")
+                _log(f"[protocol] serial={sn!r}")
                 changed = True
         elif cmd_id == _CMD_SET_NOISE_RED:
-            print(f"[RX INFO] ANC set ACK: {payload.hex()}")
+            _log(f"[RX INFO] ANC set ACK: {payload.hex()}")
         elif cmd_id == _CMD_SET_EQ:
-            print(f"[RX INFO] EQ set ACK: {payload.hex()}")
+            _log(f"[RX INFO] EQ set ACK: {payload.hex()}")
         else:
-            print(f"[RX    ] cmd=0x{cmd_id:04X} payload={payload.hex()}")
+            _log(f"[RX    ] cmd=0x{cmd_id:04X} payload={payload.hex()}")
         if changed:
             GLib.idle_add(self.emit, "state-changed")
 
@@ -455,7 +468,7 @@ class NothingDevice(GObject.Object):
                 self._check_low_battery("case", pct, "Case")
                 changed = True
         if changed:
-            print(f"[protocol] battery L={self.state.left_battery}% "
+            _log(f"[protocol] battery L={self.state.left_battery}% "
                   f"R={self.state.right_battery}% C={self.state.case_battery}%")
         return changed
 
@@ -476,7 +489,7 @@ class NothingDevice(GObject.Object):
                     mode = ANCMode.NOISE_CANCELLATION
                 if mode != self.state.anc_mode:
                     self.state.anc_mode = mode
-                    print(f"[protocol] ANC mode → {ANCMode.LABELS.get(mode, mode)} (wire val {val})")
+                    _log(f"[protocol] ANC mode → {ANCMode.LABELS.get(mode, mode)} (wire val {val})")
                     changed = True
             elif t == 2 and 1 <= val <= 4:  # NOISE_REDUCTION_LEVEL (ANC strength 1–4)
                 self._last_anc_level = val
@@ -505,7 +518,7 @@ class NothingDevice(GObject.Object):
                 self.state.right_wearing = wearing
                 changed = True
         if changed:
-            print(f"[protocol] wearing L={self.state.left_wearing} R={self.state.right_wearing}")
+            _log(f"[protocol] wearing L={self.state.left_wearing} R={self.state.right_wearing}")
         return changed
 
     # ── Legacy 0x03 frame handling (status-only fallback) ────────────────────
@@ -528,14 +541,14 @@ class NothingDevice(GObject.Object):
             self.state.right_battery = payload[1] if payload[1] <= 100 else -1
             self.state.case_battery  = (payload[2] if len(payload) >= 3
                                         and payload[2] <= 100 else -1)
-            print(f"[protocol] legacy battery L={self.state.left_battery}% "
+            _log(f"[protocol] legacy battery L={self.state.left_battery}% "
                   f"R={self.state.right_battery}% C={self.state.case_battery}%")
             self._check_low_battery("left",  self.state.left_battery,  "Left earbud")
             self._check_low_battery("right", self.state.right_battery, "Right earbud")
             self._check_low_battery("case",  self.state.case_battery,  "Case")
             GLib.idle_add(self.emit, "state-changed")
         elif msg_type == _L_INIT and payload:
-            print(f"[protocol] legacy init: {payload.hex()} — echoing back")
+            _log(f"[protocol] legacy init: {payload.hex()} — echoing back")
             # Echo init to complete handshake
             frame = bytes([_L_HOST_HDR, _L_INIT]) + struct.pack(">H", len(payload)) + payload
             try:
@@ -544,11 +557,26 @@ class NothingDevice(GObject.Object):
             except OSError:
                 pass
         elif msg_type == _L_STATE and payload:
-            print(f"[protocol] legacy state: {payload.hex()}")
+            _log(f"[protocol] legacy state: {payload.hex()}")
         else:
-            print(f"[protocol] legacy type=0x{msg_type:02x} payload={payload.hex()}")
+            _log(f"[protocol] legacy type=0x{msg_type:02x} payload={payload.hex()}")
 
     # ── Utilities ─────────────────────────────────────────────────────────────
+
+    def _restore_profile(self):
+        from . import profiles
+        p = profiles.load(self.address)
+        if not p:
+            return
+        if "anc" in p:
+            anc = p["anc"]
+            wire = (_ANC_TRANSPARENCY if anc == ANCMode.TRANSPARENCY
+                    else _ANC_OFF if anc == ANCMode.OFF else _ANC_STRONG)
+            self._x55_send(_CMD_SET_NOISE_RED, bytes([0x01, wire, 0x00]),
+                           label=f"restore ANC={ANCMode.LABELS.get(anc)}")
+        if "eq" in p:
+            eq_val = EQ_PRESETS.get(p["eq"], 0)
+            self._x55_send(_CMD_SET_EQ, bytes([eq_val]), label=f"restore EQ={p['eq']}")
 
     def _check_low_battery(self, slot: str, pct: int, label: str):
         if pct < 0:
@@ -567,7 +595,7 @@ class NothingDevice(GObject.Object):
 
     def _activation_fallback(self):
         if not self._activated and self._rfcomm_connected:
-            print("[protocol] activation ACK not received within 3s — sending GET queries")
+            _log("[protocol] activation ACK not received within 3s — sending GET queries")
             self._activated = True
             self._x55_send(_CMD_BATTERY)
             self._x55_send(_CMD_NOISE_RED, bytes([0x03]))
