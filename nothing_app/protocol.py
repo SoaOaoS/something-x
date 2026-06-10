@@ -4,7 +4,7 @@ import struct
 import subprocess
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from gi.repository import GLib, GObject
 
 _DEBUG = bool(os.getenv("SOMETHING_X_DEBUG"))
@@ -307,7 +307,7 @@ class NothingDevice(GObject.Object):
                 data += chunk
                 if len(data) >= 4:
                     break
-        except socket.timeout:
+        except TimeoutError:
             pass
 
         if not data:
@@ -336,7 +336,7 @@ class NothingDevice(GObject.Object):
                     _log(f"[RX RAW] {chunk.hex()}")
                 buf += chunk
                 buf = self._process_buf(buf)
-            except socket.timeout:
+            except TimeoutError:
                 continue
             except OSError:
                 break

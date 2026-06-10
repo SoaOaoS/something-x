@@ -7,7 +7,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("PangoCairo", "1.0")
-from gi.repository import Gtk, GLib, GObject, Gdk, Pango, PangoCairo
+from gi.repository import Gtk, GLib, PangoCairo
 
 from ..bluetooth import BluetoothDevice, BluetoothManager
 
@@ -19,7 +19,7 @@ def _mono_font() -> str:
     return "monospace"
 
 _MONO = _mono_font()
-from ..protocol import NothingDevice, ANCMode, EQ_PRESETS, DeviceState
+from ..protocol import NothingDevice, ANCMode, EQ_PRESETS
 
 
 def _find_bt_sink(address: str) -> str | None:

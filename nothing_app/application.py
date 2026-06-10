@@ -121,7 +121,7 @@ _EQ_ALIASES = {
 def _run_cli(argv: list[str]) -> int:
     from . import protocol as _proto
     _proto._QUIET = True
-    from .protocol import NothingDevice, ANCMode, EQ_PRESETS
+    from .protocol import NothingDevice, ANCMode
     from . import profiles
 
     address = None

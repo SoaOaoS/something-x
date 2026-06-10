@@ -150,7 +150,7 @@ class SplashScreen(Adw.Window):
             advances = [cr.text_extents(ch).x_advance for ch in sub]
             total_w = sum(advances) + spacing * (len(sub) - 1)
             lx = cx - total_w / 2
-            for ch, adv in zip(sub, advances):
+            for ch, adv in zip(sub, advances, strict=True):
                 te = cr.text_extents(ch)
                 cr.set_source_rgba(1.0, 1.0, 1.0, 0.32 * sub_p)
                 cr.move_to(lx - te.x_bearing, sub_y)
