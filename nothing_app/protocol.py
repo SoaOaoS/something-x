@@ -147,7 +147,7 @@ class NothingDevice(GObject.Object):
         self._anc_pending_mode: int = ANCMode.OFF
         self._last_anc_level: int = _ANC_STRONG
         self._thread: threading.Thread | None = None
-        self._low_bat_notified: set[str] = set()
+        self._low_bat_notified: dict[str, set[int]] = {}
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -602,29 +602,35 @@ class NothingDevice(GObject.Object):
             eq_val = EQ_PRESETS.get(p["eq"], 0)
             self._x55_send(_CMD_SET_EQ, bytes([eq_val]), label=f"restore EQ={p['eq']}")
 
+    _LOW_BAT_THRESHOLDS = (20, 15, 10, 5)
+
     def _check_low_battery(self, slot: str, pct: int, label: str):
         if pct < 0:
             return
-        if pct <= 20 and slot not in self._low_bat_notified:
-            self._low_bat_notified.add(slot)
-            threading.Thread(
-                target=subprocess.run,
-                args=(
-                    [
-                        "notify-send",
-                        "-u",
-                        "critical",
-                        "-i",
-                        "battery-caution",
-                        "Something X",
-                        f"{label}: {pct}% battery remaining",
-                    ],
-                ),
-                kwargs={"capture_output": True},
-                daemon=True,
-            ).start()
-        elif pct > 25:
-            self._low_bat_notified.discard(slot)
+        if pct > 25:
+            self._low_bat_notified.pop(slot, None)
+            return
+        notified = self._low_bat_notified.setdefault(slot, set())
+        for threshold in self._LOW_BAT_THRESHOLDS:
+            if pct <= threshold and threshold not in notified:
+                notified.add(threshold)
+                threading.Thread(
+                    target=subprocess.run,
+                    args=(
+                        [
+                            "notify-send",
+                            "-u",
+                            "critical",
+                            "-i",
+                            "battery-caution",
+                            "Something X",
+                            f"{label}: {pct}% battery remaining",
+                        ],
+                    ),
+                    kwargs={"capture_output": True},
+                    daemon=True,
+                ).start()
+                break
 
     def _activation_fallback(self):
         if not self._activated and self._rfcomm_connected:
