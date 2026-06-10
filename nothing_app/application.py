@@ -13,6 +13,7 @@ from gi.repository import Gtk, Adw, Gdk, Gio, GLib
 from .bluetooth import BluetoothManager
 from .window import SomethingXWindow
 from .splash import SplashScreen
+from .tray import SomethingXTray
 
 
 def _install_desktop_file():
@@ -50,6 +51,7 @@ class SomethingXApplication(Adw.Application):
         self._bt: BluetoothManager | None = None
         self._splash: SplashScreen | None = None
         self._window: SomethingXWindow | None = None
+        self._tray: SomethingXTray | None = None
         self.connect("activate", self._on_activate)
 
     def _on_activate(self, _app):
@@ -72,6 +74,7 @@ class SomethingXApplication(Adw.Application):
         win = SomethingXWindow(bt_manager=self._bt, application=self)
         win.connect("close-request", self._on_window_close)
         self._window = win
+        self._tray = SomethingXTray(self._bt, on_show_window=win.present)
         win.present()
         if self._splash:
             self._splash.destroy()
