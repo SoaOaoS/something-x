@@ -1,10 +1,3 @@
-<div align="center">
-
-```
-  ●  SOMETHING X
-     FOR LINUX
-```
-
 # Something X
 
 **A Linux-native companion app for Nothing and CMF Bluetooth devices.**  
