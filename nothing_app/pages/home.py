@@ -7,10 +7,11 @@ from ..bluetooth import BluetoothDevice, BluetoothManager, device_icon_name
 
 
 class DeviceRow(Gtk.Box):
-    def __init__(self, device: BluetoothDevice):
+    def __init__(self, device: BluetoothDevice, on_action=None):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
         self.add_css_class("device-card")
         self.device = device
+        self._on_action = on_action
         self._build()
 
     def _build(self):
@@ -55,9 +56,22 @@ class DeviceRow(Gtk.Box):
         text_box.append(bottom_row)
         self.append(text_box)
 
-        arrow = Gtk.Image.new_from_icon_name("go-next-symbolic")
-        arrow.set_opacity(0.3)
-        self.append(arrow)
+        if self._on_action is not None:
+            action_btn = Gtk.Button(label="DISCONNECT" if self.device.connected else "CONNECT")
+            action_btn.add_css_class("disconnect-button" if self.device.connected else "connect-button")
+            action_btn.add_css_class("row-action")
+            action_btn.set_valign(Gtk.Align.CENTER)
+            action_btn.connect("clicked", self._on_action_clicked)
+            self.append(action_btn)
+        else:
+            arrow = Gtk.Image.new_from_icon_name("go-next-symbolic")
+            arrow.set_opacity(0.3)
+            self.append(arrow)
+
+    def _on_action_clicked(self, btn: Gtk.Button):
+        btn.set_sensitive(False)
+        btn.set_label("…")
+        self._on_action(self.device)
 
 
 class HomePage(Gtk.Box):
@@ -176,7 +190,11 @@ class HomePage(Gtk.Box):
         self._other_label.set_visible(bool(others))
         self._empty_box.set_visible(not devices)
 
-    def _make_row(self, device: BluetoothDevice) -> Gtk.Button:
+    def _make_row(self, device: BluetoothDevice) -> Gtk.Widget:
+        # Only Nothing devices have a detail page; other devices get an inline
+        # connect/disconnect button instead of navigation.
+        if not device.is_nothing:
+            return DeviceRow(device, on_action=self._on_quick_action)
         btn = Gtk.Button()
         btn.set_has_frame(False)
         btn.add_css_class("device-row-btn")
@@ -184,6 +202,12 @@ class HomePage(Gtk.Box):
         btn.set_child(row)
         btn.connect("clicked", lambda _b, d=device: self.emit("device-selected", d))
         return btn
+
+    def _on_quick_action(self, device: BluetoothDevice):
+        if device.connected:
+            self._bt.disconnect_device(device.path)
+        else:
+            self._bt.connect_device(device.path, on_error=self._refresh_list)
 
     def _on_devices_changed(self, _manager):
         self._refresh_list()
