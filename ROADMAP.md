@@ -41,7 +41,7 @@ The RFCOMM `0x55` protocol is shared across the entire Nothing Ear lineup. Confi
 ## v1.x — Near term
 
 ### Distribution
-- ~~**AUR package**~~ — cancelled
+- [x] AUR package - AUR Package for Arch user to replace pip 
 - [x] **NixOS flake** — `flake.nix` for Nix users
 - [x] **`.desktop` file** — ship and auto-install it so the app appears in Walker/Rofi/GNOME launcher
 
