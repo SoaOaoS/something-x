@@ -514,7 +514,12 @@ class NothingDevice(GObject.Object):
     def _parse_earphone_status(self, payload: bytes) -> bool:
         # payload: [count:1][type:1][val:1]...
         # EarphoneStatus.java: bit2=inEar, bit7=isConnect, bit0=inCase/caseOpen
-        # type: 2=left, 3=right, 4=case
+        # type: 2=left, 3=right, 4=case, 5=tws, 6=stereo
+        #
+        # Device quirk: when one bud changes state, the firmware emits val=0x81
+        # (inCase=1 + isConnect=1) for the other bud as a placeholder. This
+        # combination never reflects a real physical state — skip it to avoid
+        # clobbering the stored wearing state in either direction.
         if len(payload) < 3:
             return False
         count = payload[0]
@@ -524,16 +529,17 @@ class NothingDevice(GObject.Object):
                 break
             etype = payload[i]
             val = payload[i + 1]
+            if etype not in (2, 3):
+                continue
+            if (val & 0x81) == 0x81:
+                continue
             in_ear = bool(val & 0x04)
-            wearing = in_ear
-            if etype == 2 and wearing != self.state.left_wearing:
-                self.state.left_wearing = wearing
+            if etype == 2 and in_ear != self.state.left_wearing:
+                self.state.left_wearing = in_ear
                 changed = True
-            elif etype == 3 and wearing != self.state.right_wearing:
-                self.state.right_wearing = wearing
+            elif etype == 3 and in_ear != self.state.right_wearing:
+                self.state.right_wearing = in_ear
                 changed = True
-        if changed:
-            _log(f"[protocol] wearing L={self.state.left_wearing} R={self.state.right_wearing}")
         return changed
 
     # ── Legacy 0x03 frame handling (status-only fallback) ────────────────────
