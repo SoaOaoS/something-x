@@ -256,11 +256,12 @@ def _settings_row(title: str, subtitle: str = "", right_widget: Gtk.Widget | Non
 
 
 class DevicePage(Gtk.Box):
-    def __init__(self, bt_device: BluetoothDevice, bt_manager: BluetoothManager):
+    def __init__(self, bt_device: BluetoothDevice, bt_manager: BluetoothManager, nothing_dev: NothingDevice | None = None):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self._bt_device = bt_device
         self._bt = bt_manager
         self._nothing_dev: NothingDevice | None = None
+        self._nd_handlers: list[int] = []
         self._anc_buttons: list[tuple[int, Gtk.Button]] = []
         self._eq_buttons: list[tuple[str, Gtk.Button]] = []
         self._updating_ui = False
@@ -272,7 +273,7 @@ class DevicePage(Gtk.Box):
         self._connect_retry_id: int | None = None
         self._build()
         if bt_device.is_nothing:
-            self._connect_nothing()
+            self._connect_nothing(nothing_dev)
         if bt_device.connected:
             GLib.timeout_add(800, self._query_volume)
 
@@ -461,17 +462,31 @@ class DevicePage(Gtk.Box):
 
     def cleanup(self):
         if self._nothing_dev:
-            self._nothing_dev.disconnect_rfcomm()
+            for h in self._nd_handlers:
+                try:
+                    self._nothing_dev.disconnect(h)
+                except Exception:
+                    pass
+            self._nd_handlers = []
         self._bt.disconnect(self._bt_conn_handler)
         self._bt.disconnect(self._bt_disc_handler)
 
-    def _connect_nothing(self):
-        self._nothing_dev = NothingDevice(self._bt_device.address)
-        self._nothing_dev.connect("state-changed", self._on_state_changed)
-        self._nothing_dev.connect("connected", self._on_rfcomm_connected)
-        self._nothing_dev.connect("disconnected", self._on_rfcomm_disconnected)
-        if self._bt_device.connected:
-            self._nothing_dev.connect_rfcomm()
+    def _connect_nothing(self, existing: NothingDevice | None):
+        if existing is not None:
+            self._nothing_dev = existing
+        else:
+            self._nothing_dev = NothingDevice(self._bt_device.address)
+            if self._bt_device.connected:
+                self._nothing_dev.connect_rfcomm()
+
+        self._nd_handlers = [
+            self._nothing_dev.connect("state-changed", self._on_state_changed),
+            self._nothing_dev.connect("connected", self._on_rfcomm_connected),
+            self._nothing_dev.connect("disconnected", self._on_rfcomm_disconnected),
+        ]
+        if self._nothing_dev.rfcomm_connected:
+            self._on_state_changed(self._nothing_dev)
+            GLib.timeout_add(800, self._query_volume)
 
     def _on_state_changed(self, dev: NothingDevice):
         state = dev.state
@@ -556,8 +571,6 @@ class DevicePage(Gtk.Box):
 
     def _on_conn_btn_clicked(self, _btn):
         if self._bt_device.connected:
-            if self._nothing_dev:
-                self._nothing_dev.disconnect_rfcomm()
             self._bt.disconnect_device(self._bt_device.path)
         else:
             self._conn_btn.set_label("CONNECTING…")
@@ -574,8 +587,6 @@ class DevicePage(Gtk.Box):
             return
         self._update_conn_button()
         self._update_status_label()
-        if self._nothing_dev:
-            self._nothing_dev.connect_rfcomm()
 
     def _on_bt_device_disconnected(self, _manager, path: str):
         if path != self._bt_device.path:

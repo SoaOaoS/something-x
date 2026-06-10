@@ -4,6 +4,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
 from .bluetooth import BluetoothDevice, BluetoothManager
+from .protocol import NothingDevice
 from .pages.home import HomePage
 from .pages.device import DevicePage
 
@@ -14,7 +15,34 @@ class SomethingXWindow(Adw.ApplicationWindow):
         self.set_default_size(420, 780)
         self.set_resizable(True)
         self._bt = bt_manager
+        self._nothing_devices: dict[str, NothingDevice] = {}
+        self._bt_conn_handler = bt_manager.connect("device-connected", self._on_bt_connected)
+        self._bt_disc_handler = bt_manager.connect("device-disconnected", self._on_bt_disconnected)
         self._build()
+        self._autoconnect_existing()
+
+    def _autoconnect_existing(self):
+        for dev in self._bt.get_nothing_devices():
+            if dev.connected:
+                self._start_nothing_device(dev.path, dev.address)
+
+    def _start_nothing_device(self, path: str, address: str):
+        if path in self._nothing_devices:
+            return
+        nd = NothingDevice(address)
+        self._nothing_devices[path] = nd
+        nd.connect_rfcomm()
+        print(f"[window] autoconnect RFCOMM → {address}")
+
+    def _on_bt_connected(self, _mgr, path: str):
+        dev = self._bt.devices.get(path)
+        if dev and dev.is_nothing:
+            self._start_nothing_device(path, dev.address)
+
+    def _on_bt_disconnected(self, _mgr, path: str):
+        nd = self._nothing_devices.pop(path, None)
+        if nd:
+            nd.disconnect_rfcomm()
 
     def _build(self):
         nav = Adw.NavigationView()
@@ -63,7 +91,8 @@ class SomethingXWindow(Adw.ApplicationWindow):
         header.add_css_class("nothing-header")
         toolbar_view.add_top_bar(header)
 
-        device_page = DevicePage(bt_device=bt_device, bt_manager=self._bt)
+        nothing_dev = self._nothing_devices.get(bt_device.path)
+        device_page = DevicePage(bt_device=bt_device, bt_manager=self._bt, nothing_dev=nothing_dev)
         toolbar_view.set_content(device_page)
 
         nav_page.set_child(toolbar_view)
