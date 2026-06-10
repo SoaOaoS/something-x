@@ -93,19 +93,22 @@ class EarbudVisual(Gtk.DrawingArea):
         self._left = -1
         self._right = -1
         self._case = -1
+        self._left_wearing = False
+        self._right_wearing = False
 
-    def update(self, left: int, right: int, case: int):
+    def update(self, left: int, right: int, case: int, left_wearing: bool = False, right_wearing: bool = False):
         self._left, self._right, self._case = left, right, case
+        self._left_wearing, self._right_wearing = left_wearing, right_wearing
         self.queue_draw()
 
     def _draw(self, _area, cr, width, height):
         cx = width / 2
         cy = height / 2 - 8
-        self._draw_bud(cr, cx - 92, cy, self._left, "L")
-        self._draw_bud(cr, cx + 92, cy, self._right, "R")
+        self._draw_bud(cr, cx - 92, cy, self._left, "L", self._left_wearing)
+        self._draw_bud(cr, cx + 92, cy, self._right, "R", self._right_wearing)
         self._draw_case(cr, cx, cy + 54, self._case)
 
-    def _draw_bud(self, cr, cx, cy, pct, label):
+    def _draw_bud(self, cr, cx, cy, pct, label, wearing: bool = False):
         R = 42
         r = 29
         bc = _battery_color(pct) if pct >= 0 else (0.18, 0.18, 0.18)
@@ -166,12 +169,27 @@ class EarbudVisual(Gtk.DrawingArea):
         cr.move_to(cx - te.width / 2 - te.x_bearing, cy - te.height / 2 - te.y_bearing)
         cr.show_text(text)
 
+        # in-ear indicator dot (always rendered; glows red when wearing)
+        dot_y = cy + R + 8
+        if wearing:
+            rg = cairo.RadialGradient(cx, dot_y, 0, cx, dot_y, 9)
+            rg.add_color_stop_rgba(0, 0.87, 0.18, 0.18, 0.30)
+            rg.add_color_stop_rgba(1, 0.87, 0.18, 0.18, 0.0)
+            cr.set_source(rg)
+            cr.arc(cx, dot_y, 9, 0, 2 * math.pi)
+            cr.fill()
+            cr.set_source_rgba(0.87, 0.18, 0.18, 0.9)
+        else:
+            cr.set_source_rgba(1.0, 1.0, 1.0, 0.07)
+        cr.arc(cx, dot_y, 3, 0, 2 * math.pi)
+        cr.fill()
+
         # L / R label below
         cr.set_source_rgba(1.0, 1.0, 1.0, 0.20)
         cr.select_font_face(_MONO, cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD)
         cr.set_font_size(9)
         te = cr.text_extents(label)
-        cr.move_to(cx - te.width / 2 - te.x_bearing, cy + R + 17)
+        cr.move_to(cx - te.width / 2 - te.x_bearing, cy + R + 20)
         cr.show_text(label)
 
     def _draw_case(self, cr, cx, cy, pct):
@@ -503,7 +521,8 @@ class DevicePage(Gtk.Box):
 
     def _on_state_changed(self, dev: NothingDevice):
         state = dev.state
-        self._visual.update(state.left_battery, state.right_battery, state.case_battery)
+        self._visual.update(state.left_battery, state.right_battery, state.case_battery,
+                            state.left_wearing, state.right_wearing)
         self._sync_anc_ui(state.anc_mode)
         self._sync_eq_ui(state.eq_preset)
         self._updating_ui = True
