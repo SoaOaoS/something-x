@@ -125,3 +125,39 @@ jobs:
       - name: Publish to PyPI
         if: steps.version.outputs.skip != 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
+
+      # ── Update AUR package ──────────────────────────────────────────────
+      - name: Update PKGBUILD and push to AUR
+        if: steps.version.outputs.skip != 'true'
+        env:
+          NEW_VERSION: ${{ steps.version.outputs.new }}
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          # Wait for PyPI to serve the new tarball (propagation delay)
+          TARBALL_URL="https://files.pythonhosted.org/packages/source/s/something-x/something_x-${NEW_VERSION}.tar.gz"
+          for i in $(seq 1 10); do
+            STATUS=$(curl -sL -o /dev/null -w "%{http_code}" "$TARBALL_URL")
+            [ "$STATUS" = "200" ] && break
+            echo "Waiting for PyPI ($i/10)…"
+            sleep 15
+          done
+
+          SHA256=$(curl -sL "$TARBALL_URL" | sha256sum | awk '{print $1}')
+          echo "sha256: $SHA256"
+
+          # Update PKGBUILD in the checkout
+          sed -i "s/^pkgver=.*/pkgver=${NEW_VERSION}/" PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          sed -i "s/sha256sums=('[^']*')/sha256sums=('${SHA256}')/" PKGBUILD
+
+      - name: Deploy to AUR
+        if: steps.version.outputs.skip != 'true'
+        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
+        with:
+          pkgname: something-x
+          pkgbuild: ./PKGBUILD
+          commit_username: github-actions[bot]
+          commit_email: github-actions[bot]@users.noreply.github.com
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Update to ${{ steps.version.outputs.new }}"
+          allow_empty_commits: false

@@ -1,3 +1,6 @@
+import os
+import shutil
+import subprocess
 import sys
 import importlib.resources
 import gi
@@ -9,6 +12,22 @@ from gi.repository import Gtk, Adw, Gdk, Gio
 from .bluetooth import BluetoothManager
 from .window import SomethingXWindow
 from .splash import SplashScreen
+
+
+def _install_desktop_file():
+    dest_dir = os.path.expanduser("~/.local/share/applications")
+    dest = os.path.join(dest_dir, "com.something.x.omarchy.desktop")
+    if os.path.exists(dest):
+        return
+    try:
+        ref = importlib.resources.files("nothing_app.data").joinpath("com.something.x.omarchy.desktop")
+        os.makedirs(dest_dir, exist_ok=True)
+        with importlib.resources.as_file(ref) as src:
+            shutil.copy2(src, dest)
+        subprocess.run(["update-desktop-database", dest_dir], capture_output=True)
+        print("[app] desktop file installed to ~/.local/share/applications/")
+    except Exception as exc:
+        print(f"[app] desktop file install skipped: {exc}")
 
 
 def _css_path() -> str:
@@ -31,6 +50,7 @@ class SomethingXApplication(Adw.Application):
         self.connect("activate", self._on_activate)
 
     def _on_activate(self, _app):
+        _install_desktop_file()
         Adw.StyleManager.get_default().set_color_scheme(Adw.ColorScheme.FORCE_DARK)
         self._load_css()
         self._bt = BluetoothManager()
