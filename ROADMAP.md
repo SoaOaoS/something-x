@@ -50,7 +50,7 @@ The RFCOMM `0x55` protocol is shared across the entire Nothing Ear lineup. Confi
 - [x] **Background mode** — closing the window hides it; relaunch shows it again (Gio single-instance)
 - [x] **Per-device profiles** — ANC + EQ saved per device address to `~/.config/something-x/profiles.json`, restored automatically on reconnect
 - [x] **CLI quick-toggle** — `something-x --anc off|on|transparency`, `something-x --eq bass`, `something-x --battery`
-- [ ] **System tray icon** — show battery on hover via StatusNotifierItem (Waybar/SNI)
+- [x] **System tray icon** — show battery on hover via StatusNotifierItem (Waybar/SNI)
 - [ ] **Wearing detection display** — show L/R in-ear status on the earbud visual
 - [x] **Auto-connect RFCOMM** — connect as soon as BlueZ reports the device connected, no tap needed
 
