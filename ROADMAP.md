@@ -51,7 +51,7 @@ The RFCOMM `0x55` protocol is shared across the entire Nothing Ear lineup. Confi
 - [ ] **Per-device profiles** — save ANC + EQ settings per device address, restore on reconnect
 - [ ] **CLI quick-toggle** — `something-x --anc off`, `something-x --eq bass`, `something-x --battery`
 - [ ] **Wearing detection display** — show L/R in-ear status on the earbud visual
-- [ ] **Auto-connect RFCOMM** — connect as soon as BlueZ reports the device connected, no tap needed
+- [x] **Auto-connect RFCOMM** — connect as soon as BlueZ reports the device connected, no tap needed
 
 ### Protocol / devices
 - [ ] **CMF Buds Pro field testing** — verify ANC command IDs match
