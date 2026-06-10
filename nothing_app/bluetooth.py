@@ -10,8 +10,14 @@ OBJ_MANAGER_IFACE = "org.freedesktop.DBus.ObjectManager"
 PROPERTIES_IFACE = "org.freedesktop.DBus.Properties"
 
 NOTHING_PATTERNS = (
-    "nothing ear", "ear (1)", "ear (2)", "ear (a)", "ear (stick)",
-    "cmf buds", "cmf earphone", "nothing phone",
+    "nothing ear",
+    "ear (1)",
+    "ear (2)",
+    "ear (a)",
+    "ear (stick)",
+    "cmf buds",
+    "cmf earphone",
+    "nothing phone",
 )
 
 
@@ -157,14 +163,14 @@ class BluetoothManager(GObject.Object):
     def connect_device(self, path: str, on_error=None):
         if not self._bus:
             return
+
         def _err(e):
             print(f"[BT] connect error: {e}")
             if on_error:
                 GLib.idle_add(on_error)
+
         try:
-            iface = dbus.Interface(
-                self._bus.get_object(BLUEZ_SERVICE, path), DEVICE_IFACE
-            )
+            iface = dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, path), DEVICE_IFACE)
             iface.Connect(reply_handler=lambda: None, error_handler=_err)
         except Exception as exc:
             print(f"[bluetooth] connect {path}: {exc}")
@@ -175,9 +181,7 @@ class BluetoothManager(GObject.Object):
         if not self._bus:
             return
         try:
-            iface = dbus.Interface(
-                self._bus.get_object(BLUEZ_SERVICE, path), DEVICE_IFACE
-            )
+            iface = dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, path), DEVICE_IFACE)
             iface.Disconnect(
                 reply_handler=lambda: None,
                 error_handler=lambda e: print(f"[BT] disconnect error: {e}"),
@@ -189,14 +193,10 @@ class BluetoothManager(GObject.Object):
         if not self._bus:
             return
         try:
-            mgr = dbus.Interface(
-                self._bus.get_object(BLUEZ_SERVICE, "/"), OBJ_MANAGER_IFACE
-            )
+            mgr = dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, "/"), OBJ_MANAGER_IFACE)
             for path, ifaces in mgr.GetManagedObjects().items():
                 if ADAPTER_IFACE in ifaces:
-                    adapter = dbus.Interface(
-                        self._bus.get_object(BLUEZ_SERVICE, path), ADAPTER_IFACE
-                    )
+                    adapter = dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, path), ADAPTER_IFACE)
                     adapter.StartDiscovery()
                     GLib.timeout_add_seconds(30, self._stop_discovery_on_path, str(path))
                     break
@@ -205,9 +205,7 @@ class BluetoothManager(GObject.Object):
 
     def _stop_discovery_on_path(self, path: str):
         try:
-            adapter = dbus.Interface(
-                self._bus.get_object(BLUEZ_SERVICE, path), ADAPTER_IFACE
-            )
+            adapter = dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, path), ADAPTER_IFACE)
             adapter.StopDiscovery()
         except Exception:
             pass

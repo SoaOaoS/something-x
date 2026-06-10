@@ -1,0 +1,84 @@
+name: Release Dev
+
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: write
+  id-token: write  # for PyPI OIDC trusted publishing
+
+jobs:
+  release-dev:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── Compute dev version ─────────────────────────────────────────────
+      - name: Compute dev version
+        id: version
+        run: |
+          CURRENT=$(python3 -c "
+          import re, sys
+          m = re.search(r'version\s*=\s*\"([^\"]+)\"', open('pyproject.toml').read())
+          print(m.group(1) if m else sys.exit(1))
+          ")
+          DEV_VERSION="${CURRENT}.dev${{ github.run_number }}"
+          SHORT_SHA=$(git rev-parse --short HEAD)
+
+          echo "current=$CURRENT"       >> $GITHUB_OUTPUT
+          echo "dev_version=$DEV_VERSION" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA"   >> $GITHUB_OUTPUT
+          echo "Dev version: $DEV_VERSION (sha: $SHORT_SHA)"
+
+      # ── Patch pyproject.toml for dev build ──────────────────────────────
+      - name: Patch pyproject.toml
+        run: |
+          sed -i 's/^name\s*=\s*"something-x"/name            = "something-x-dev"/' pyproject.toml
+          sed -i "s/^version = \"${{ steps.version.outputs.current }}\"/version = \"${{ steps.version.outputs.dev_version }}\"/" pyproject.toml
+          sed -i 's/^something-x = /something-x-dev = /' pyproject.toml
+          grep -E "^name|^version|something-x" pyproject.toml
+
+      # ── Build wheel + sdist ─────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build distribution
+        run: |
+          pip install build
+          python -m build
+          ls dist/
+
+      # ── GitHub pre-release ──────────────────────────────────────────────
+      - name: Create GitHub pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "dev-${{ steps.version.outputs.short_sha }}"
+          prerelease: true
+          generate_release_notes: true
+          files: dist/*
+          body: |
+            ## something-x-dev ${{ steps.version.outputs.dev_version }}
+
+            > Pre-release build from `develop` — not for production use.
+
+            **Commit**: `${{ steps.version.outputs.short_sha }}`
+
+            ### Install
+
+            ```bash
+            pip install something-x-dev==${{ steps.version.outputs.dev_version }}
+
+            # Or download the wheel below
+            pip install something_x_dev-${{ steps.version.outputs.dev_version }}-py3-none-any.whl
+            ```
+
+      # ── Publish to PyPI (OIDC — requires trusted publisher configured) ──
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

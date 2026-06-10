@@ -1,4 +1,5 @@
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
@@ -104,6 +105,7 @@ class SomethingXWindow(Adw.ApplicationWindow):
 
     def _open_bt_settings(self, _btn):
         import subprocess
+
         for cmd in (
             ["blueman-manager"],
             ["gnome-control-center", "bluetooth"],

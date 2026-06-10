@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_PAT }}
 
       # ── Determine version bump from conventional commit ─────────────────
       - name: Parse commit and bump version
@@ -150,4 +150,3 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: "Update to ${{ steps.version.outputs.new }}"
           allow_empty_commits: false
-# trigger pipeline
