@@ -25,14 +25,17 @@ jobs:
       - name: Install ruff
         run: pip install ruff
 
-      # Posts inline review comments on the PR diff for every ruff finding
-      - uses: reviewdog/action-ruff@v1
+      - name: Setup reviewdog
+        uses: reviewdog/action-setup@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          reporter: github-pr-review      # inline comments on the diff
-          level: error
-          ruff_args: nothing_app/
+          reviewdog_version: latest
 
-      # Still fail the job if formatting is wrong (reviewdog doesn't cover format)
+      # Posts inline review comments on the PR diff for every ruff finding
+      - name: Lint with reviewdog
+        run: ruff check --output-format rdjson nothing_app/ | reviewdog -f=rdjson -reporter=github-pr-review -fail-on-error
+        env:
+          REVIEWDOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Still fail the job if formatting is wrong
       - name: Check formatting
         run: ruff format --check nothing_app/
