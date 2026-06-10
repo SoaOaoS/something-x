@@ -10,6 +10,9 @@
 
 ## v1.x — Near term
 
+### Docs
+- [ ] **GitHub Pages** — project landing page
+
 ### Distribution
 - [x] AUR package — AUR package for Arch users to replace pip
 - [x] **NixOS flake** — `flake.nix` for Nix users
