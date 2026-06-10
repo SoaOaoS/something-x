@@ -11,7 +11,7 @@ from gi.repository import Gtk, GLib, GObject, Gdk, Pango
 from ..bluetooth import BluetoothDevice, BluetoothManager
 
 def _mono_font() -> str:
-    for name in (_MONO, "JetBrainsMono", "Fira Mono", "DejaVu Sans Mono", "monospace"):
+    for name in ("JetBrainsMono", "Fira Mono", "DejaVu Sans Mono", "monospace"):
         fm = Pango.FontMap.get_default()
         if fm.get_family(name) is not None:
             return name
