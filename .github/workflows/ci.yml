@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write  # needed for reviewdog to post inline comments
+
+jobs:
+  lint:
+    name: Lint & format
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Setup reviewdog
+        uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: latest
+
+      # Posts inline review comments on the PR diff for every ruff finding
+      - name: Lint with reviewdog
+        run: ruff check --output-format rdjson nothing_app/ | reviewdog -f=rdjson -reporter=github-pr-review -fail-on-error
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Still fail the job if formatting is wrong
+      - name: Check formatting
+        run: ruff format --check nothing_app/

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name            = "something-x"
-version = "1.2.1"
+version = "1.2.3"
 description     = "Something X device manager for Omarchy / Linux"
 readme          = "README.md"
 license         = { text = "MIT" }
@@ -39,3 +39,16 @@ include = ["nothing_app*"]
 
 [tool.setuptools.package-data]
 nothing_app = ["data/*.css", "data/*.desktop"]
+
+[project.optional-dependencies]
+dev = ["ruff"]
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+    "E402",  # module-level import not at top — required by gi.require_version() pattern
+    "I001",  # import sort — same reason
+]

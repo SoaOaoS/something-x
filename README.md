@@ -21,6 +21,10 @@
 - **ANC control** — Off · Noise Cancellation · Transparency (real RFCOMM protocol)
 - **EQ presets** — Balanced · More Bass · More Treble · Voice
 - **Volume slider** — controls the PulseAudio/PipeWire A2DP sink directly
+- **Per-device profiles** — ANC and EQ saved per device, restored automatically on reconnect
+- **Background mode** — closing the window keeps the app running; relaunch to reopen
+- **CLI quick-toggles** — control your earbuds without opening the GUI (see [CLI usage](#cli-usage))
+- **Low battery notifications** — `notify-send` alert when any bud drops below 20 %
 - **Firmware version & serial number** — read from the device over RFCOMM
 - **In-ear detection toggle**
 - **Device discovery** — BlueZ D-Bus; Nothing/CMF devices highlighted with a badge
@@ -103,10 +107,25 @@ something-x         # if installed via pip
 3. **Scan** — "SCAN FOR DEVICES" runs 30 s BlueZ discovery
 4. **Device page** — tap a card to open controls:
    - Battery rings (L / R / Case) update in real time
-   - ANC and EQ apply immediately over RFCOMM
+   - ANC and EQ apply immediately over RFCOMM; settings saved automatically
    - Volume slider controls the A2DP sink via `pactl`
    - Firmware and serial number shown after connection
 5. **Disconnect** — red button sends a clean BlueZ disconnect
+6. **Close** — hides to background; run `something-x` again to reopen
+
+---
+
+## CLI usage
+
+After connecting to a device at least once via the GUI, you can control it from the terminal:
+
+```bash
+something-x --battery                    # print battery levels
+something-x --anc off|on|transparency   # set ANC mode
+something-x --eq balanced|bass|treble|voice  # set EQ preset
+something-x --anc on --eq bass          # combine actions
+something-x --device AA:BB:CC:DD:EE:FF --battery  # target a specific device
+```
 
 ---
 
@@ -127,11 +146,12 @@ This project uses **Conventional Commits**. Pushing to `main` triggers automatic
 
 ```
 nothing_app/
-├── application.py      Adw.Application — CSS, dark theme, splash handoff
+├── application.py      Adw.Application — CSS, dark theme, splash, background mode, CLI
 ├── splash.py           Animated splash screen (Cairo, typewriter, ripples)
 ├── window.py           AdwNavigationView — home ↔ device routing
 ├── bluetooth.py        BlueZ D-Bus manager (discovery, connect/disconnect signals)
 ├── protocol.py         Nothing Ear RFCOMM 0x55 binary protocol (reverse-engineered)
+├── profiles.py         Per-device ANC/EQ profile persistence (~/.config/something-x/)
 ├── data/
 │   └── style.css       Nothing X glass-morphism CSS theme
 └── pages/
