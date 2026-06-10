@@ -161,3 +161,4 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: "Update to ${{ steps.version.outputs.new }}"
           allow_empty_commits: false
+# trigger pipeline
