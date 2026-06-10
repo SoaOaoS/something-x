@@ -6,14 +6,15 @@ import cairo
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Pango", "1.0")
-from gi.repository import Gtk, GLib, GObject, Gdk, Pango
+gi.require_version("PangoCairo", "1.0")
+from gi.repository import Gtk, GLib, GObject, Gdk, Pango, PangoCairo
 
 from ..bluetooth import BluetoothDevice, BluetoothManager
 
 def _mono_font() -> str:
-    for name in ("JetBrainsMono", "Fira Mono", "DejaVu Sans Mono", "monospace"):
-        fm = Pango.FontMap.get_default()
-        if fm.get_family(name) is not None:
+    available = {f.get_name() for f in PangoCairo.FontMap.get_default().list_families()}
+    for name in ("JetBrainsMono", "Fira Mono", "DejaVu Sans Mono"):
+        if name in available:
             return name
     return "monospace"
 
