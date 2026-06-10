@@ -15,6 +15,7 @@ def _log(*args, **kwargs):
     if not _QUIET:
         print(*args, **kwargs)
 
+
 # ── 0x55 protocol (from APK decompilation: Nothing Ear 3 / Donphan) ────────────
 #
 # Frame layout (both directions):
@@ -30,22 +31,22 @@ def _log(*args, **kwargs):
 # CRC covers: SOF + ctrl(2) + cmd(2) + len(2) + FSN + payload
 # CRC16-IBM/ARC: init=0xFFFF, poly=0xA001 (reflected 0x8005)
 
-_SOF           = 0x55
-_CTRL_HOST_CRC = 0x0160   # all outgoing frames: CRC + multiFrames + deviceType=1
+_SOF = 0x55
+_CTRL_HOST_CRC = 0x0160  # all outgoing frames: CRC + multiFrames + deviceType=1
 
 # Query commands (0xC0xx) – app→device, response has bit15 cleared
-_CMD_PROTO_VERSION  = 0xC001   # activation handshake (isNeedActivate=true)
-_CMD_REMOTE_CONF    = 0xC006   # GET_REMOTE_CONFIGURATION — serial number (UTF-8 string)
-_CMD_BATTERY        = 0xC007
-_CMD_EARPHONE       = 0xC00A
-_CMD_NOISE_RED      = 0xC01E   # get ANC state; payload [0x03] = request 3 entries
-_CMD_EQ_MODE        = 0xC01F
-_CMD_HOST_VERSION   = 0xC042   # GET_HOST_VERSION_DEVICE — firmware version (UTF-8 string)
+_CMD_PROTO_VERSION = 0xC001  # activation handshake (isNeedActivate=true)
+_CMD_REMOTE_CONF = 0xC006  # GET_REMOTE_CONFIGURATION — serial number (UTF-8 string)
+_CMD_BATTERY = 0xC007
+_CMD_EARPHONE = 0xC00A
+_CMD_NOISE_RED = 0xC01E  # get ANC state; payload [0x03] = request 3 entries
+_CMD_EQ_MODE = 0xC01F
+_CMD_HOST_VERSION = 0xC042  # GET_HOST_VERSION_DEVICE — firmware version (UTF-8 string)
 
 # SET commands (0xF0xx) – app→device, ACK has bit15 cleared
-_CMD_SET_ACTIVATED  = 0xF001   # activation response; no payload
-_CMD_SET_NOISE_RED  = 0xF00F   # payload: [0x01, anc_val, 0x00]
-_CMD_SET_EQ         = 0xF010   # payload: [eq_val]
+_CMD_SET_ACTIVATED = 0xF001  # activation response; no payload
+_CMD_SET_NOISE_RED = 0xF00F  # payload: [0x01, anc_val, 0x00]
+_CMD_SET_EQ = 0xF010  # payload: [eq_val]
 
 
 def _crc16(data: bytes) -> int:
@@ -56,34 +57,35 @@ def _crc16(data: bytes) -> int:
             crc = (crc >> 1) ^ 0xA001 if (crc & 1) else crc >> 1
     return crc & 0xFFFF
 
+
 # Device event notifications (0xE0xx) – device→app, bit15 always set
-_EVT_BATTERY        = 0xE001
-_EVT_STATUS         = 0xE002
-_EVT_NOISE_RED      = 0xE003
+_EVT_BATTERY = 0xE001
+_EVT_STATUS = 0xE002
+_EVT_NOISE_RED = 0xE003
 
 # Battery payload: [type:1][val:1] pairs
 #   type 2=left  3=right  4=case
 #   val: bit7=charging, bits[6:0]=percent
-_BAT_LEFT  = 2
+_BAT_LEFT = 2
 _BAT_RIGHT = 3
-_BAT_CASE  = 4
+_BAT_CASE = 4
 
 # ANC wire values for SET_NOISE_RED payload byte [1] (type=1 = NOISE_REDUCTION_MODE triplet)
 # These are MODE constants from DeviceNoiseReduction.java, NOT the VALUE constants.
 # VALUE_NOISE_REDUCTION_CLOSE=0 and VALUE_PASS_THROUGH=0xFE are for type=2 (level) entries.
-_ANC_OFF          = 5    # MODE_NOISE_REDUCTION_CLOSE
-_ANC_STRONG       = 1    # MODE_NOISE_REDUCTION_STRONG  (confirmed working)
-_ANC_MEDIUM       = 2    # MODE_NOISE_REDUCTION_MEDIUM
-_ANC_WEAK         = 3    # MODE_NOISE_REDUCTION_WEAK
-_ANC_TRANSPARENCY = 7    # MODE_PASS_THROUGH
+_ANC_OFF = 5  # MODE_NOISE_REDUCTION_CLOSE
+_ANC_STRONG = 1  # MODE_NOISE_REDUCTION_STRONG  (confirmed working)
+_ANC_MEDIUM = 2  # MODE_NOISE_REDUCTION_MEDIUM
+_ANC_WEAK = 3  # MODE_NOISE_REDUCTION_WEAK
+_ANC_TRANSPARENCY = 7  # MODE_PASS_THROUGH
 
 # ── Legacy 0x03/0x02 protocol (ch17 status-only stream) ──────────────────────
 # Still used for battery parsing from the old status channel fallback.
-_L_DEV_HDR    = 0x03
-_L_HOST_HDR   = 0x02
-_L_INIT       = 0x01   # init handshake, echo back
-_L_STATE      = 0x02
-_L_BATTERY    = 0x03
+_L_DEV_HDR = 0x03
+_L_HOST_HDR = 0x02
+_L_INIT = 0x01  # init handshake, echo back
+_L_STATE = 0x02
+_L_BATTERY = 0x03
 
 # ── Channel probe priority ───────────────────────────────────────────────────
 _PROBE_CHANNELS = [15, 17, 16, 18, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
@@ -91,44 +93,46 @@ _PROBE_CHANNELS = [15, 17, 16, 18, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
 
 # ── Public enumerations ──────────────────────────────────────────────────────
 
+
 class ANCMode:
-    OFF               = 0
+    OFF = 0
     NOISE_CANCELLATION = 1
-    TRANSPARENCY      = 2
+    TRANSPARENCY = 2
     LABELS = {OFF: "Off", NOISE_CANCELLATION: "ANC", TRANSPARENCY: "Transparency"}
 
 
 EQ_PRESETS = {
-    "Balanced":    0,
-    "More Bass":   1,
+    "Balanced": 0,
+    "More Bass": 1,
     "More Treble": 2,
-    "Voice":       3,
+    "Voice": 3,
 }
 EQ_PRESET_NAMES = {v: k for k, v in EQ_PRESETS.items()}
 
 
 @dataclass
 class DeviceState:
-    left_battery:     int  = -1
-    right_battery:    int  = -1
-    case_battery:     int  = -1
-    anc_mode:         int  = ANCMode.OFF
-    eq_preset:        str  = "Balanced"
+    left_battery: int = -1
+    right_battery: int = -1
+    case_battery: int = -1
+    anc_mode: int = ANCMode.OFF
+    eq_preset: str = "Balanced"
     in_ear_detection: bool = True
-    auto_pause:       bool = True
-    firmware_version: str  = "—"
-    serial_number:    str  = "—"
-    left_wearing:     bool = False
-    right_wearing:    bool = False
+    auto_pause: bool = True
+    firmware_version: str = "—"
+    serial_number: str = "—"
+    left_wearing: bool = False
+    right_wearing: bool = False
 
 
 # ── Device class ─────────────────────────────────────────────────────────────
 
+
 class NothingDevice(GObject.Object):
     __gsignals__ = {
         "state-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
-        "connected":     (GObject.SignalFlags.RUN_FIRST, None, ()),
-        "disconnected":  (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "connected": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "disconnected": (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self, address: str):
@@ -150,6 +154,7 @@ class NothingDevice(GObject.Object):
     def connect_rfcomm(self):
         if self._thread and self._thread.is_alive():
             return
+
         def _run():
             channels = self._discover_channels()
             for ch in channels:
@@ -198,6 +203,7 @@ class NothingDevice(GObject.Object):
         self._anc_pending_mode = mode
         self._anc_debounce_id = GLib.timeout_add(300, self._do_set_anc)
         from . import profiles
+
         profiles.save(self.address, mode, self.state.eq_preset)
 
     def _do_set_anc(self):
@@ -205,8 +211,11 @@ class NothingDevice(GObject.Object):
         if not self._activated:
             return False
         mode = self._anc_pending_mode
-        val = _ANC_TRANSPARENCY if mode == ANCMode.TRANSPARENCY else (
-              _ANC_OFF if mode == ANCMode.OFF else _ANC_STRONG)
+        val = (
+            _ANC_TRANSPARENCY
+            if mode == ANCMode.TRANSPARENCY
+            else (_ANC_OFF if mode == ANCMode.OFF else _ANC_STRONG)
+        )
         label = ANCMode.LABELS.get(mode, mode)
         self._x55_send(_CMD_SET_NOISE_RED, bytes([0x01, val, 0x00]), label=f"ANC={label}")
         return False
@@ -219,6 +228,7 @@ class NothingDevice(GObject.Object):
         eq_val = EQ_PRESETS.get(preset, 0)
         self._x55_send(_CMD_SET_EQ, bytes([eq_val]), label=f"EQ={preset}")
         from . import profiles
+
         profiles.save(self.address, self.state.anc_mode, preset)
 
     def set_in_ear_detection(self, enabled: bool):
@@ -230,6 +240,7 @@ class NothingDevice(GObject.Object):
     def _discover_channels(self) -> list[int]:
         try:
             import bluetooth as pybluez  # type: ignore
+
             services = pybluez.find_service(address=self.address)
             channels = [s["port"] for s in services if isinstance(s.get("port"), int)]
             if channels:
@@ -243,7 +254,9 @@ class NothingDevice(GObject.Object):
         try:
             out = subprocess.run(
                 ["sdptool", "browse", self.address],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
             ).stdout
             channels = []
             for line in out.splitlines():
@@ -268,14 +281,13 @@ class NothingDevice(GObject.Object):
     def _try_channel(self, ch: int) -> tuple[socket.socket, bytes] | None:
         for attempt in range(2):
             try:
-                sock = socket.socket(
-                    socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM
-                )
+                sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
                 sock.settimeout(5)
                 sock.connect((self.address, ch))
                 break
             except OSError as exc:
                 import errno as _errno
+
                 if exc.errno == _errno.EBUSY and attempt == 0:
                     _log(f"[protocol] ch{ch}: busy — waiting 3s for stale connection to release")
                     sock.close()
@@ -288,8 +300,8 @@ class NothingDevice(GObject.Object):
 
         # Probe with GET_PROTOCOL_VERSION — use CRC to match official app (sendDataNeedCrc=true)
         _probe_hdr = struct.pack("<BHHH", _SOF, _CTRL_HOST_CRC, _CMD_PROTO_VERSION, 0) + bytes([0x01])
-        probe_x55  = _probe_hdr + struct.pack("<H", _crc16(_probe_hdr))
-        probe_leg  = bytes([_L_HOST_HDR, _L_BATTERY, 0x00, 0x00])
+        probe_x55 = _probe_hdr + struct.pack("<H", _crc16(_probe_hdr))
+        probe_leg = bytes([_L_HOST_HDR, _L_BATTERY, 0x00, 0x00])
         try:
             sock.sendall(probe_x55 + probe_leg)
         except OSError:
@@ -315,8 +327,9 @@ class NothingDevice(GObject.Object):
             sock.close()
             return None
 
-        proto = "0x55" if data[0] == _SOF else (
-                "0x03-legacy" if data[0] == _L_DEV_HDR else f"0x{data[0]:02x}")
+        proto = (
+            "0x55" if data[0] == _SOF else ("0x03-legacy" if data[0] == _L_DEV_HDR else f"0x{data[0]:02x}")
+        )
         _log(f"[protocol] ch{ch}: {proto} — {data.hex()}")
         sock.settimeout(6)
         return sock, data
@@ -386,11 +399,11 @@ class NothingDevice(GObject.Object):
                 break
             if crc_size:
                 rx_crc = struct.unpack_from("<H", buf, 8 + length)[0]
-                ok_crc = _crc16(buf[:8 + length])
+                ok_crc = _crc16(buf[: 8 + length])
                 if rx_crc != ok_crc:
                     _log(f"[RX CRC ERR] got 0x{rx_crc:04X} expected 0x{ok_crc:04X}")
-            payload = buf[8:8 + length]
-            cmd_id = cmd_raw | 0x8000   # normalize response→request ID
+            payload = buf[8 : 8 + length]
+            cmd_id = cmd_raw | 0x8000  # normalize response→request ID
             self._dispatch_x55(cmd_id, payload)
             buf = buf[total:]
         return buf
@@ -406,6 +419,7 @@ class NothingDevice(GObject.Object):
             _log(f"[RX INFO] activation ACK payload={payload.hex()}")
             self._activated = True
             from . import profiles
+
             profiles.set_last_device(self.address)
             # Always resend on real ACK — fallback may have sent queries before
             # the device finished activating and silently dropped them.
@@ -453,8 +467,8 @@ class NothingDevice(GObject.Object):
             if i + 1 >= len(payload):
                 break
             btype = payload[i]
-            bval  = payload[i + 1]
-            pct   = bval & 0x7F
+            bval = payload[i + 1]
+            pct = bval & 0x7F
             if btype == _BAT_LEFT and pct != self.state.left_battery:
                 self.state.left_battery = pct
                 self._check_low_battery("left", pct, "Left earbud")
@@ -468,8 +482,10 @@ class NothingDevice(GObject.Object):
                 self._check_low_battery("case", pct, "Case")
                 changed = True
         if changed:
-            _log(f"[protocol] battery L={self.state.left_battery}% "
-                  f"R={self.state.right_battery}% C={self.state.case_battery}%")
+            _log(
+                f"[protocol] battery L={self.state.left_battery}% "
+                f"R={self.state.right_battery}% C={self.state.case_battery}%"
+            )
         return changed
 
     def _parse_anc(self, payload: bytes) -> bool:
@@ -507,10 +523,10 @@ class NothingDevice(GObject.Object):
             if i + 1 >= len(payload):
                 break
             etype = payload[i]
-            val   = payload[i + 1]
-            in_ear    = bool(val & 0x04)
+            val = payload[i + 1]
+            in_ear = bool(val & 0x04)
             connected = bool(val & 0x80)
-            wearing   = in_ear and connected
+            wearing = in_ear and connected
             if etype == 2 and wearing != self.state.left_wearing:
                 self.state.left_wearing = wearing
                 changed = True
@@ -528,24 +544,25 @@ class NothingDevice(GObject.Object):
             if len(buf) < 4:
                 break
             msg_type = buf[1]
-            length   = struct.unpack(">H", buf[2:4])[0]
+            length = struct.unpack(">H", buf[2:4])[0]
             if len(buf) < 4 + length:
                 break
-            self._dispatch_legacy(msg_type, buf[4:4 + length])
-            buf = buf[4 + length:]
+            self._dispatch_legacy(msg_type, buf[4 : 4 + length])
+            buf = buf[4 + length :]
         return buf
 
     def _dispatch_legacy(self, msg_type: int, payload: bytes):
         if msg_type == _L_BATTERY and len(payload) >= 2:
-            self.state.left_battery  = payload[0] if payload[0] <= 100 else -1
+            self.state.left_battery = payload[0] if payload[0] <= 100 else -1
             self.state.right_battery = payload[1] if payload[1] <= 100 else -1
-            self.state.case_battery  = (payload[2] if len(payload) >= 3
-                                        and payload[2] <= 100 else -1)
-            _log(f"[protocol] legacy battery L={self.state.left_battery}% "
-                  f"R={self.state.right_battery}% C={self.state.case_battery}%")
-            self._check_low_battery("left",  self.state.left_battery,  "Left earbud")
+            self.state.case_battery = payload[2] if len(payload) >= 3 and payload[2] <= 100 else -1
+            _log(
+                f"[protocol] legacy battery L={self.state.left_battery}% "
+                f"R={self.state.right_battery}% C={self.state.case_battery}%"
+            )
+            self._check_low_battery("left", self.state.left_battery, "Left earbud")
             self._check_low_battery("right", self.state.right_battery, "Right earbud")
-            self._check_low_battery("case",  self.state.case_battery,  "Case")
+            self._check_low_battery("case", self.state.case_battery, "Case")
             GLib.idle_add(self.emit, "state-changed")
         elif msg_type == _L_INIT and payload:
             _log(f"[protocol] legacy init: {payload.hex()} — echoing back")
@@ -565,15 +582,22 @@ class NothingDevice(GObject.Object):
 
     def _restore_profile(self):
         from . import profiles
+
         p = profiles.load(self.address)
         if not p:
             return
         if "anc" in p:
             anc = p["anc"]
-            wire = (_ANC_TRANSPARENCY if anc == ANCMode.TRANSPARENCY
-                    else _ANC_OFF if anc == ANCMode.OFF else _ANC_STRONG)
-            self._x55_send(_CMD_SET_NOISE_RED, bytes([0x01, wire, 0x00]),
-                           label=f"restore ANC={ANCMode.LABELS.get(anc)}")
+            wire = (
+                _ANC_TRANSPARENCY
+                if anc == ANCMode.TRANSPARENCY
+                else _ANC_OFF
+                if anc == ANCMode.OFF
+                else _ANC_STRONG
+            )
+            self._x55_send(
+                _CMD_SET_NOISE_RED, bytes([0x01, wire, 0x00]), label=f"restore ANC={ANCMode.LABELS.get(anc)}"
+            )
         if "eq" in p:
             eq_val = EQ_PRESETS.get(p["eq"], 0)
             self._x55_send(_CMD_SET_EQ, bytes([eq_val]), label=f"restore EQ={p['eq']}")
@@ -585,8 +609,17 @@ class NothingDevice(GObject.Object):
             self._low_bat_notified.add(slot)
             threading.Thread(
                 target=subprocess.run,
-                args=(["notify-send", "-u", "critical", "-i", "battery-caution",
-                       "Something X", f"{label}: {pct}% battery remaining"],),
+                args=(
+                    [
+                        "notify-send",
+                        "-u",
+                        "critical",
+                        "-i",
+                        "battery-caution",
+                        "Something X",
+                        f"{label}: {pct}% battery remaining",
+                    ],
+                ),
                 kwargs={"capture_output": True},
                 daemon=True,
             ).start()

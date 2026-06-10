@@ -4,12 +4,14 @@ import subprocess
 import threading
 import cairo
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, GLib, PangoCairo
 
 from ..bluetooth import BluetoothDevice, BluetoothManager
+
 
 def _mono_font() -> str:
     available = {f.get_name() for f in PangoCairo.FontMap.get_default().list_families()}
@@ -18,20 +20,23 @@ def _mono_font() -> str:
             return name
     return "monospace"
 
+
 _MONO = _mono_font()
 from ..protocol import NothingDevice, ANCMode, EQ_PRESETS
 
 
 def _find_bt_sink(address: str) -> str | None:
-    addr_key = address.replace(':', '_').lower()
+    addr_key = address.replace(":", "_").lower()
     try:
         out = subprocess.run(
             ["pactl", "list", "short", "sinks"],
-            capture_output=True, text=True, timeout=2,
+            capture_output=True,
+            text=True,
+            timeout=2,
         ).stdout
         for line in out.splitlines():
             if addr_key in line.lower():
-                parts = line.split('\t')
+                parts = line.split("\t")
                 if len(parts) >= 2:
                     return parts[1].strip()
     except Exception:
@@ -46,9 +51,11 @@ def _get_sink_volume(address: str) -> int | None:
     try:
         out = subprocess.run(
             ["pactl", "get-sink-volume", sink],
-            capture_output=True, text=True, timeout=2,
+            capture_output=True,
+            text=True,
+            timeout=2,
         ).stdout
-        m = re.search(r'(\d+)%', out)
+        m = re.search(r"(\d+)%", out)
         return int(m.group(1)) if m else None
     except Exception:
         return None
@@ -61,7 +68,8 @@ def _set_sink_volume(address: str, pct: int):
     try:
         subprocess.run(
             ["pactl", "set-sink-volume", sink, f"{pct}%"],
-            capture_output=True, timeout=2,
+            capture_output=True,
+            timeout=2,
         )
     except Exception:
         pass
@@ -394,20 +402,24 @@ class DevicePage(Gtk.Box):
         self._in_ear_switch.set_active(True)
         self._in_ear_switch.set_valign(Gtk.Align.CENTER)
         self._in_ear_switch.connect("state-set", self._on_in_ear_toggled)
-        settings_group.append(_settings_row(
-            "In-Ear Detection",
-            "Pause when earbuds are removed",
-            self._in_ear_switch,
-        ))
+        settings_group.append(
+            _settings_row(
+                "In-Ear Detection",
+                "Pause when earbuds are removed",
+                self._in_ear_switch,
+            )
+        )
 
         self._auto_pause_switch = Gtk.Switch()
         self._auto_pause_switch.set_active(True)
         self._auto_pause_switch.set_valign(Gtk.Align.CENTER)
-        settings_group.append(_settings_row(
-            "Auto-Pause",
-            "Pause media on removal",
-            self._auto_pause_switch,
-        ))
+        settings_group.append(
+            _settings_row(
+                "Auto-Pause",
+                "Pause media on removal",
+                self._auto_pause_switch,
+            )
+        )
 
         page.append(settings_group)
 
@@ -499,6 +511,7 @@ class DevicePage(Gtk.Box):
             pct = _get_sink_volume(self._bt_device.address)
             if pct is not None:
                 GLib.idle_add(self._apply_vol_display, pct)
+
         threading.Thread(target=_run, daemon=True).start()
         return False
 
@@ -519,9 +532,7 @@ class DevicePage(Gtk.Box):
 
     def _do_set_volume(self, pct: int):
         self._vol_debounce_id = None
-        threading.Thread(
-            target=_set_sink_volume, args=(self._bt_device.address, pct), daemon=True
-        ).start()
+        threading.Thread(target=_set_sink_volume, args=(self._bt_device.address, pct), daemon=True).start()
         return False
 
     def _sync_anc_ui(self, active_mode: int):
@@ -577,6 +588,7 @@ class DevicePage(Gtk.Box):
         self._update_status_label()
         if self._nothing_dev:
             from .. import profiles
+
             profiles.set_last_device(self._bt_device.address)
             self._nothing_dev.connect_rfcomm()
 

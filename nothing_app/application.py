@@ -4,6 +4,7 @@ import subprocess
 import sys
 import importlib.resources
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
@@ -36,6 +37,7 @@ def _css_path() -> str:
         return str(ref)
     except Exception:
         import os
+
         return os.path.join(os.path.dirname(__file__), "data", "style.css")
 
 
@@ -79,8 +81,13 @@ class SomethingXApplication(Adw.Application):
         # Hide instead of destroy so the app keeps running in background
         self._window.hide()
         subprocess.Popen(
-            ["notify-send", "-i", "audio-headphones", "Something X",
-             "Running in background. Launch again to reopen."],
+            [
+                "notify-send",
+                "-i",
+                "audio-headphones",
+                "Something X",
+                "Running in background. Launch again to reopen.",
+            ],
             start_new_session=True,
         )
         return True  # prevent default close/destroy
@@ -105,9 +112,14 @@ class SomethingXApplication(Adw.Application):
 # ── CLI quick-toggle mode ─────────────────────────────────────────────────────
 
 _ANC_ALIASES = {
-    "off": 0, "0": 0,
-    "on": 1, "anc": 1, "noise": 1,
-    "transparency": 2, "trans": 2, "passthrough": 2,
+    "off": 0,
+    "0": 0,
+    "on": 1,
+    "anc": 1,
+    "noise": 1,
+    "transparency": 2,
+    "trans": 2,
+    "passthrough": 2,
 }
 
 _EQ_ALIASES = {
@@ -120,6 +132,7 @@ _EQ_ALIASES = {
 
 def _run_cli(argv: list[str]) -> int:
     from . import protocol as _proto
+
     _proto._QUIET = True
     from .protocol import NothingDevice, ANCMode
     from . import profiles

@@ -1,4 +1,5 @@
 import gi
+
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, GLib, GObject
 
@@ -45,12 +46,8 @@ class DeviceRow(Gtk.Box):
         text_box.append(addr_lbl)
 
         bottom_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        status_lbl = Gtk.Label(
-            label="● Connected" if self.device.connected else "○ Disconnected"
-        )
-        status_lbl.add_css_class(
-            "status-connected" if self.device.connected else "status-disconnected"
-        )
+        status_lbl = Gtk.Label(label="● Connected" if self.device.connected else "○ Disconnected")
+        status_lbl.add_css_class("status-connected" if self.device.connected else "status-disconnected")
         status_lbl.set_xalign(0)
         bottom_row.append(status_lbl)
 
@@ -152,9 +149,7 @@ class HomePage(Gtk.Box):
         scan_row.append(self._scan_btn)
         self._content.append(scan_row)
 
-        self._bt_warning = Gtk.Label(
-            label="⚠  Bluetooth unavailable — is bluetoothd running?"
-        )
+        self._bt_warning = Gtk.Label(label="⚠  Bluetooth unavailable — is bluetoothd running?")
         self._bt_warning.add_css_class("empty-subtitle")
         self._bt_warning.set_margin_top(8)
         self._bt_warning.set_halign(Gtk.Align.CENTER)
