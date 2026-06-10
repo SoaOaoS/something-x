@@ -40,7 +40,8 @@ jobs:
         run: |
           sed -i 's/^name\s*=\s*"something-x"/name            = "something-x-dev"/' pyproject.toml
           sed -i "s/^version = \"${{ steps.version.outputs.current }}\"/version = \"${{ steps.version.outputs.dev_version }}\"/" pyproject.toml
-          grep -E "^name|^version" pyproject.toml
+          sed -i 's/^something-x = /something-x-dev = /' pyproject.toml
+          grep -E "^name|^version|something-x" pyproject.toml
 
       # ── Build wheel + sdist ─────────────────────────────────────────────
       - name: Set up Python
