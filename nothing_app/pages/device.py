@@ -576,6 +576,8 @@ class DevicePage(Gtk.Box):
         self._update_conn_button()
         self._update_status_label()
         if self._nothing_dev:
+            from .. import profiles
+            profiles.set_last_device(self._bt_device.address)
             self._nothing_dev.connect_rfcomm()
 
     def _on_bt_device_disconnected(self, _manager, path: str):
