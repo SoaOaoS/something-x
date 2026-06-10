@@ -265,7 +265,12 @@ def _settings_row(title: str, subtitle: str = "", right_widget: Gtk.Widget | Non
 
 
 class DevicePage(Gtk.Box):
-    def __init__(self, bt_device: BluetoothDevice, bt_manager: BluetoothManager, nothing_dev: NothingDevice | None = None):
+    def __init__(
+        self,
+        bt_device: BluetoothDevice,
+        bt_manager: BluetoothManager,
+        nothing_dev: NothingDevice | None = None,
+    ):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self._bt_device = bt_device
         self._bt = bt_manager
