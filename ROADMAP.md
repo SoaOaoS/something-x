@@ -11,7 +11,7 @@
 ## v1.x — Near term
 
 ### Docs
-- [ ] **GitHub Pages** — project landing page
+- [x] **GitHub Pages** — project landing page + full documentation site (`docs/`)
 
 ### Distribution
 - [x] AUR package — AUR package for Arch users to replace pip
