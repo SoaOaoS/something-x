@@ -525,8 +525,7 @@ class NothingDevice(GObject.Object):
             etype = payload[i]
             val = payload[i + 1]
             in_ear = bool(val & 0x04)
-            connected = bool(val & 0x80)
-            wearing = in_ear and connected
+            wearing = in_ear
             if etype == 2 and wearing != self.state.left_wearing:
                 self.state.left_wearing = wearing
                 changed = True
