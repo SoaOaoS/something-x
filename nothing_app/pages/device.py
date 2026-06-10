@@ -96,7 +96,9 @@ class EarbudVisual(Gtk.DrawingArea):
         self._left_wearing = False
         self._right_wearing = False
 
-    def update(self, left: int, right: int, case: int, left_wearing: bool = False, right_wearing: bool = False):
+    def update(
+        self, left: int, right: int, case: int, left_wearing: bool = False, right_wearing: bool = False
+    ):
         self._left, self._right, self._case = left, right, case
         self._left_wearing, self._right_wearing = left_wearing, right_wearing
         self.queue_draw()
@@ -283,7 +285,12 @@ def _settings_row(title: str, subtitle: str = "", right_widget: Gtk.Widget | Non
 
 
 class DevicePage(Gtk.Box):
-    def __init__(self, bt_device: BluetoothDevice, bt_manager: BluetoothManager, nothing_dev: NothingDevice | None = None):
+    def __init__(
+        self,
+        bt_device: BluetoothDevice,
+        bt_manager: BluetoothManager,
+        nothing_dev: NothingDevice | None = None,
+    ):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self._bt_device = bt_device
         self._bt = bt_manager
@@ -521,8 +528,13 @@ class DevicePage(Gtk.Box):
 
     def _on_state_changed(self, dev: NothingDevice):
         state = dev.state
-        self._visual.update(state.left_battery, state.right_battery, state.case_battery,
-                            state.left_wearing, state.right_wearing)
+        self._visual.update(
+            state.left_battery,
+            state.right_battery,
+            state.case_battery,
+            state.left_wearing,
+            state.right_wearing,
+        )
         self._sync_anc_ui(state.anc_mode)
         self._sync_eq_ui(state.eq_preset)
         self._updating_ui = True
