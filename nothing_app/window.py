@@ -34,7 +34,6 @@ class SomethingXWindow(Adw.ApplicationWindow):
         nd = NothingDevice(address)
         self._nothing_devices[path] = nd
         nd.connect_rfcomm()
-        print(f"[window] autoconnect RFCOMM → {address}")
 
     def _on_bt_connected(self, _mgr, path: str):
         dev = self._bt.devices.get(path)
