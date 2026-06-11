@@ -1,14 +1,25 @@
+import subprocess
+import threading
 import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
-from . import __version__
+from . import __version__, profiles
 from .bluetooth import BluetoothDevice, BluetoothManager
 from .protocol import NothingDevice
 from .pages.home import HomePage
 from .pages.device import DevicePage
+
+
+def _send_notify(summary: str, body: str, icon: str = "audio-headphones"):
+    threading.Thread(
+        target=subprocess.run,
+        args=(["notify-send", "-i", icon, summary, body],),
+        kwargs={"capture_output": True},
+        daemon=True,
+    ).start()
 
 
 class SomethingXWindow(Adw.ApplicationWindow):
@@ -39,11 +50,19 @@ class SomethingXWindow(Adw.ApplicationWindow):
         dev = self._bt.devices.get(path)
         if dev and dev.is_nothing:
             self._start_nothing_device(path, dev.address)
+            if profiles.get_notify_prefs(dev.address).get("connect", True):
+                name = profiles.get_nickname(dev.address) or dev.name
+                _send_notify("Something X", f"{name} connected")
 
     def _on_bt_disconnected(self, _mgr, path: str):
+        dev = self._bt.devices.get(path)
         nd = self._nothing_devices.pop(path, None)
         if nd:
             nd.disconnect_rfcomm()
+        if dev and dev.is_nothing:
+            if profiles.get_notify_prefs(dev.address).get("disconnect", True):
+                name = profiles.get_nickname(dev.address) or dev.name
+                _send_notify("Something X", f"{name} disconnected")
 
     def _build(self):
         nav = Adw.NavigationView()
@@ -64,6 +83,16 @@ class SomethingXWindow(Adw.ApplicationWindow):
         title_widget.set_title("Something X")
         title_widget.set_subtitle(__version__)
         header.set_title_widget(title_widget)
+
+        quit_btn = Gtk.Button(label="Quit")
+        quit_btn.set_tooltip_text("Quit the app and stop background process")
+        quit_btn.connect("clicked", lambda _: self.get_application().quit())
+        header.pack_start(quit_btn)
+
+        close_btn = Gtk.Button(label="Close")
+        close_btn.set_tooltip_text("Hide window, keep running in background")
+        close_btn.connect("clicked", lambda _: self.hide())
+        header.pack_start(close_btn)
 
         bt_btn = Gtk.Button.new_from_icon_name("bluetooth-symbolic")
         bt_btn.set_tooltip_text("Bluetooth settings")
