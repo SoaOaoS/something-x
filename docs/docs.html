@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Documentation — Something X</title>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --red:       #e83535;
@@ -14,12 +14,13 @@
       --surface:   rgba(255,255,255,0.04);
       --surface-h: rgba(255,255,255,0.07);
       --border:    rgba(255,255,255,0.08);
-      --border-h:  rgba(255,255,255,0.14);
-      --text:      #ffffff;
-      --text-2:    rgba(255,255,255,0.55);
-      --text-3:    rgba(255,255,255,0.28);
-      --text-4:    rgba(255,255,255,0.09);
+      --border-h:  rgba(255,255,255,0.16);
+      --text:      #f0f0f0;
+      --text-2:    rgba(255,255,255,0.72);
+      --text-3:    rgba(255,255,255,0.50);
+      --text-4:    rgba(255,255,255,0.28);
       --mono:      'JetBrains Mono', 'Courier New', monospace;
+      --sans:      'Inter', system-ui, -apple-system, sans-serif;
       --nav-h:     56px;
       --sidebar-w: 268px;
     }
@@ -30,9 +31,22 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: var(--mono);
+      font-family: var(--sans);
       line-height: 1.7;
       -webkit-font-smoothing: antialiased;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--red);
+      outline-offset: 3px;
+      border-radius: 3px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
     }
 
     /* ── Top nav ─────────────────────────────────────────────────────────── */
@@ -42,7 +56,7 @@
       height: var(--nav-h);
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 24px;
-      background: rgba(0,0,0,0.88);
+      background: rgba(0,0,0,0.92);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
     }
@@ -50,6 +64,7 @@
     .nav-brand {
       display: flex; align-items: center; gap: 10px;
       text-decoration: none; color: var(--text);
+      font-family: var(--mono);
       font-size: 12px; font-weight: 700; letter-spacing: 3px;
       text-transform: uppercase;
     }
@@ -64,16 +79,34 @@
       margin: 0 16px;
     }
     .nav-section {
-      font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+      font-family: var(--mono);
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
       color: var(--text-3);
     }
 
     .nav-links { display: flex; gap: 24px; list-style: none; }
     .nav-links a {
+      font-family: var(--mono);
       font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
       color: var(--text-3); text-decoration: none; transition: color 150ms;
     }
     .nav-links a:hover { color: var(--text-2); }
+
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+
+    .nav-sidebar-btn {
+      display: none; background: none; border: none; cursor: pointer;
+      padding: 8px; color: var(--text-3); flex-direction: column;
+      justify-content: center; gap: 5px;
+    }
+    .nav-sidebar-btn span {
+      display: block; width: 20px; height: 1.5px;
+      background: currentColor; border-radius: 1px;
+      transition: transform 220ms ease, opacity 220ms ease;
+    }
+    .nav-sidebar-btn[aria-expanded="true"] span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .nav-sidebar-btn[aria-expanded="true"] span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    .nav-sidebar-btn[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
 
     /* ── Layout ──────────────────────────────────────────────────────────── */
 
@@ -82,6 +115,13 @@
       margin-top: var(--nav-h);
       min-height: calc(100vh - var(--nav-h));
     }
+
+    /* Sidebar overlay backdrop */
+    .sidebar-backdrop {
+      display: none; position: fixed; inset: 0;
+      z-index: 149; background: rgba(0,0,0,0.6);
+    }
+    .sidebar-open .sidebar-backdrop { display: block; }
 
     /* ── Sidebar ─────────────────────────────────────────────────────────── */
 
@@ -101,14 +141,16 @@
     .sidebar-group { margin-bottom: 28px; }
 
     .sidebar-label {
+      font-family: var(--mono);
       font-size: 9px; font-weight: 700; letter-spacing: 4px;
       text-transform: uppercase; color: var(--red);
       padding: 0 24px; margin-bottom: 6px;
     }
 
     .sidebar-link {
-      display: block; padding: 7px 24px;
-      font-size: 12px; letter-spacing: 0.5px;
+      display: block; padding: 8px 24px;
+      font-family: var(--sans);
+      font-size: 13px; font-weight: 400;
       color: var(--text-3); text-decoration: none;
       transition: color 150ms, background 150ms;
       border-left: 2px solid transparent;
@@ -116,12 +158,13 @@
     .sidebar-link:hover { color: var(--text-2); background: var(--surface); }
     .sidebar-link.active {
       color: var(--text); border-left-color: var(--red);
-      background: var(--red-dim);
+      background: var(--red-dim); font-weight: 500;
     }
 
     .sidebar-sub {
       display: block; padding: 5px 24px 5px 38px;
-      font-size: 11px; color: var(--text-3); text-decoration: none;
+      font-family: var(--sans);
+      font-size: 12px; color: var(--text-3); text-decoration: none;
       transition: color 150ms; border-left: 2px solid transparent;
     }
     .sidebar-sub:hover { color: var(--text-2); }
@@ -138,10 +181,11 @@
     /* breadcrumb */
     .breadcrumb {
       display: flex; align-items: center; gap: 8px;
+      font-family: var(--mono);
       font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
-      color: var(--text-3); margin-bottom: 32px;
+      color: var(--text-3); margin-bottom: 36px;
     }
-    .breadcrumb a { color: var(--text-3); text-decoration: none; }
+    .breadcrumb a { color: var(--text-3); text-decoration: none; transition: color 150ms; }
     .breadcrumb a:hover { color: var(--text-2); }
     .breadcrumb-sep { color: var(--border-h); }
 
@@ -150,21 +194,24 @@
     .doc-section:last-child { margin-bottom: 0; }
 
     h1 {
+      font-family: var(--mono);
       font-size: clamp(24px, 3vw, 36px); font-weight: 700;
       letter-spacing: 2px; line-height: 1.15;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
     h1 .x { color: var(--red); }
 
     .page-lead {
-      font-size: 14px; color: var(--text-2); line-height: 1.8;
-      margin-bottom: 40px; max-width: 580px;
+      font-family: var(--sans);
+      font-size: 15px; color: var(--text-2); line-height: 1.8;
+      margin-bottom: 40px; max-width: 600px;
     }
 
     h2 {
+      font-family: var(--mono);
       font-size: 18px; font-weight: 700; letter-spacing: 1px;
-      margin-top: 56px; margin-bottom: 18px;
-      padding-bottom: 10px;
+      margin-top: 56px; margin-bottom: 20px;
+      padding-bottom: 12px;
       border-bottom: 1px solid var(--border);
       scroll-margin-top: calc(var(--nav-h) + 16px);
     }
@@ -176,90 +223,134 @@
     h2:hover .anchor { opacity: 1; }
 
     h3 {
+      font-family: var(--mono);
       font-size: 14px; font-weight: 700; letter-spacing: 0.5px;
-      margin-top: 32px; margin-bottom: 12px;
+      margin-top: 36px; margin-bottom: 14px;
       color: var(--text);
       scroll-margin-top: calc(var(--nav-h) + 16px);
     }
 
-    p { font-size: 13px; color: var(--text-2); margin-bottom: 14px; line-height: 1.8; }
+    p {
+      font-family: var(--sans);
+      font-size: 14px; color: var(--text-2); margin-bottom: 16px; line-height: 1.8;
+    }
     p:last-child { margin-bottom: 0; }
 
     a { color: var(--red); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
     code {
-      font-family: var(--mono); font-size: 0.875em;
+      font-family: var(--mono); font-size: 0.85em;
       background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.10);
       border-radius: 5px; padding: 2px 7px;
       color: var(--text);
     }
+
+    .pre-wrap { position: relative; margin: 18px 0; }
 
     pre {
       background: rgba(255,255,255,0.025);
       border: 1px solid rgba(255,255,255,0.07);
       border-radius: 12px; padding: 20px 22px;
-      overflow-x: auto; margin: 16px 0;
-      font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
+      overflow-x: auto;
+      font-family: var(--mono); font-size: 12.5px; line-height: 1.75;
+      margin: 0;
     }
     pre code {
       background: none; border: none; padding: 0;
       font-size: inherit; color: var(--text-2);
     }
-    .c  { color: rgba(255,255,255,0.24); }
+    .c  { color: rgba(255,255,255,0.32); }
     .k  { color: var(--text-2); }
-    .v  { color: rgba(232,53,53,0.8); }
-    .s  { color: rgba(143,223,114,0.7); }  /* string */
-    .n  { color: rgba(255,200,100,0.75); } /* number */
-    .kw { color: rgba(140,180,255,0.7); }  /* keyword */
+    .v  { color: rgba(232,53,53,0.85); }
+    .s  { color: rgba(143,223,114,0.75); }
+    .n  { color: rgba(255,200,100,0.78); }
+    .kw { color: rgba(140,180,255,0.78); }
+
+    .copy-btn {
+      position: absolute; top: 10px; right: 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 6px; padding: 4px 10px;
+      font-family: var(--mono); font-size: 9px; font-weight: 600;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--text-3); cursor: pointer;
+      transition: background 150ms, color 150ms, border-color 150ms;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.10); color: var(--text-2); border-color: var(--border-h); }
+    .copy-btn.copied {
+      color: rgba(143,223,114,0.9);
+      border-color: rgba(143,223,114,0.3);
+      background: rgba(143,223,114,0.06);
+    }
 
     /* callout boxes */
     .callout {
-      border-radius: 12px; padding: 16px 20px; margin: 20px 0;
+      border-radius: 12px; padding: 14px 18px 14px 16px; margin: 22px 0;
       border-left: 3px solid;
-      font-size: 12.5px; line-height: 1.7;
+    }
+    .callout-type {
+      font-family: var(--mono);
+      font-size: 9px; font-weight: 700; letter-spacing: 2.5px;
+      text-transform: uppercase; margin-bottom: 6px;
+    }
+    .callout p {
+      font-size: 13.5px; line-height: 1.7; margin: 0;
     }
     .callout-note {
       background: rgba(255,255,255,0.04); border-color: var(--border-h);
-      color: var(--text-2);
     }
+    .callout-note .callout-type { color: var(--text-3); }
+    .callout-note p { color: var(--text-2); }
+
     .callout-tip {
-      background: rgba(143,223,114,0.06); border-color: rgba(143,223,114,0.4);
-      color: rgba(143,223,114,0.85);
+      background: rgba(143,223,114,0.06); border-color: rgba(143,223,114,0.45);
     }
+    .callout-tip .callout-type { color: rgba(143,223,114,0.9); }
+    .callout-tip p { color: rgba(200,240,180,0.85); }
+
     .callout-warn {
-      background: rgba(240,192,64,0.06); border-color: rgba(240,192,64,0.4);
-      color: rgba(240,192,64,0.85);
+      background: rgba(240,192,64,0.06); border-color: rgba(240,192,64,0.45);
     }
+    .callout-warn .callout-type { color: rgba(240,192,64,0.9); }
+    .callout-warn p { color: rgba(245,215,130,0.85); }
+
     .callout-danger {
       background: var(--red-dim); border-color: var(--red);
-      color: rgba(255,150,150,0.85);
     }
-    .callout strong { color: inherit; font-weight: 700; }
+    .callout-danger .callout-type { color: var(--red); }
+    .callout-danger p { color: rgba(255,160,160,0.88); }
+
+    .callout strong { font-weight: 600; }
 
     /* tables */
-    .table-wrap { overflow-x: auto; margin: 20px 0; border-radius: 12px; border: 1px solid var(--border); }
-    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .table-wrap { overflow-x: auto; margin: 22px 0; border-radius: 12px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
     thead tr { background: rgba(255,255,255,0.04); }
     th {
-      padding: 11px 16px; text-align: left;
-      font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      padding: 12px 16px; text-align: left;
+      font-family: var(--mono);
+      font-size: 9px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase;
       color: var(--text-3); border-bottom: 1px solid var(--border);
     }
     td {
+      font-family: var(--sans);
       padding: 11px 16px; color: var(--text-2);
       border-bottom: 1px solid rgba(255,255,255,0.04);
+      line-height: 1.6;
     }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(255,255,255,0.02); }
+    tr:hover td { background: rgba(255,255,255,0.025); }
 
     /* step list */
-    .steps { counter-reset: step; list-style: none; margin: 16px 0; }
+    .steps { counter-reset: step; list-style: none; margin: 18px 0; }
     .steps li {
       counter-increment: step;
       display: flex; gap: 16px;
-      margin-bottom: 20px; font-size: 13px; color: var(--text-2);
+      margin-bottom: 22px;
+      font-family: var(--sans);
+      font-size: 14px; color: var(--text-2); line-height: 1.7;
     }
     .steps li::before {
       content: counter(step);
@@ -267,45 +358,51 @@
       width: 26px; height: 26px; border-radius: 50%;
       background: var(--red-dim); border: 1px solid rgba(232,53,53,0.3);
       color: var(--red);
+      font-family: var(--mono);
       font-size: 11px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
+      margin-top: 1px;
     }
 
     /* module tree */
     .module-tree {
       background: rgba(255,255,255,0.025); border: 1px solid var(--border);
       border-radius: 12px; padding: 20px 22px;
-      font-size: 12.5px; line-height: 1.9; color: var(--text-2);
+      font-family: var(--mono);
+      font-size: 12.5px; line-height: 2; color: var(--text-2);
     }
     .module-tree .dir  { color: var(--text); font-weight: 700; }
-    .module-tree .file { color: rgba(232,53,53,0.7); }
+    .module-tree .file { color: rgba(232,53,53,0.75); }
     .module-tree .desc { color: var(--text-3); }
 
     /* badge */
     .badge {
       display: inline-block;
+      font-family: var(--mono);
       font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
       text-transform: uppercase; padding: 3px 8px; border-radius: 5px;
     }
     .badge-red   { background: var(--red-dim); color: var(--red); border: 1px solid rgba(232,53,53,0.3); }
-    .badge-green { background: rgba(143,223,114,0.1); color: rgba(143,223,114,0.85); border: 1px solid rgba(143,223,114,0.25); }
+    .badge-green { background: rgba(143,223,114,0.1); color: rgba(143,223,114,0.9); border: 1px solid rgba(143,223,114,0.25); }
     .badge-grey  { background: var(--surface); color: var(--text-3); border: 1px solid var(--border); }
 
-    /* on-page nav (right) */
+    /* on-page TOC */
     .toc {
       position: sticky; top: calc(var(--nav-h) + 32px);
       width: 210px; flex-shrink: 0; align-self: flex-start;
       padding: 0 24px 0 0; margin-left: 40px;
     }
     .toc-label {
+      font-family: var(--mono);
       font-size: 9px; font-weight: 700; letter-spacing: 4px;
       text-transform: uppercase; color: var(--text-3); margin-bottom: 12px;
     }
     .toc a {
-      display: block; font-size: 11px; color: var(--text-3);
-      text-decoration: none; padding: 4px 0;
-      border-left: 2px solid transparent; padding-left: 12px;
+      display: block; font-family: var(--sans); font-size: 12px; color: var(--text-3);
+      text-decoration: none; padding: 5px 0 5px 12px;
+      border-left: 2px solid transparent;
       transition: color 150ms, border-color 150ms;
+      line-height: 1.5;
     }
     .toc a:hover { color: var(--text-2); }
     .toc a.active { color: var(--text-2); border-left-color: var(--red); }
@@ -313,34 +410,60 @@
     /* hr */
     hr { border: none; border-top: 1px solid var(--border); margin: 56px 0; }
 
-    /* footer */
+    /* doc footer */
     .doc-footer {
       border-top: 1px solid var(--border); padding: 32px 0 0;
       margin-top: 64px;
       display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
     }
     .doc-footer a {
+      font-family: var(--mono);
       font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
       color: var(--text-3); text-decoration: none; transition: color 150ms;
     }
     .doc-footer a:hover { color: var(--text-2); }
     .doc-footer-copy {
+      font-family: var(--mono);
       font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
       color: var(--text-4); width: 100%; margin-top: 16px;
     }
 
-    @media (max-width: 900px) {
+    /* back to top */
+    .back-top {
+      position: fixed; bottom: 32px; right: 32px; z-index: 50;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text-3); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; line-height: 1;
+      opacity: 0; pointer-events: none;
+      transition: opacity 200ms, background 150ms, color 150ms;
+    }
+    .back-top.visible { opacity: 1; pointer-events: auto; }
+    .back-top:hover { background: var(--surface-h); color: var(--text-2); }
+
+    @media (max-width: 1100px) {
       .toc { display: none; }
     }
     @media (max-width: 700px) {
-      .sidebar { display: none; }
+      .sidebar {
+        position: fixed; top: var(--nav-h); left: 0;
+        z-index: 150; height: calc(100vh - var(--nav-h));
+        background: #0a0a0a;
+        transform: translateX(-100%);
+        transition: transform 280ms ease;
+        box-shadow: 4px 0 32px rgba(0,0,0,0.6);
+      }
+      .sidebar-open .sidebar { transform: translateX(0); }
       .content { padding: 32px 20px 64px; }
+      .nav-sidebar-btn { display: flex; }
+      .nav-links { display: none; }
+      .back-top { bottom: 20px; right: 20px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── Top nav ───────────────────────────────────────────────────────────── -->
 <nav class="topnav">
   <div style="display:flex;align-items:center">
     <a class="nav-brand" href="index.html">
@@ -348,19 +471,23 @@
       Something&nbsp;<span class="nav-x">X</span>
     </a>
     <span class="nav-sep"></span>
-    <span class="nav-section">Documentation</span>
+    <span class="nav-section">Docs</span>
   </div>
-  <ul class="nav-links">
-    <li><a href="index.html">Home</a></li>
-    <li><a href="https://github.com/SoaOaoS/something-x">GitHub</a></li>
-  </ul>
+  <div class="nav-right">
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="https://github.com/SoaOaoS/something-x">GitHub</a></li>
+    </ul>
+    <button class="nav-sidebar-btn" aria-label="Toggle sidebar" aria-expanded="false" aria-controls="sidebar">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
 </nav>
 
-<!-- ── Layout ────────────────────────────────────────────────────────────── -->
-<div class="layout">
+<div class="layout" id="layout">
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-group">
       <div class="sidebar-label">Getting Started</div>
       <a class="sidebar-link active" href="#overview">Overview</a>
@@ -423,7 +550,6 @@
     </div>
   </aside>
 
-  <!-- Main content -->
   <main class="content">
 
     <div class="breadcrumb">
@@ -442,8 +568,9 @@
       </p>
 
       <div class="callout callout-tip">
-        <strong>Omarchy / Hyprland users:</strong> Something X is built and optimised for the
-        Omarchy desktop. Pure black, JetBrains Mono, Nothing Red — it matches your setup out of the box.
+        <div class="callout-type">Tip</div>
+        <p><strong>Omarchy / Hyprland users:</strong> Something X is built and optimised for the
+        Omarchy desktop. Pure black, JetBrains Mono, Nothing Red — it matches your setup out of the box.</p>
       </div>
     </div>
 
@@ -483,7 +610,9 @@
       <h2>Installation <a class="anchor" href="#installation">#</a></h2>
 
       <h3 id="install-arch">Arch Linux / Omarchy</h3>
-      <pre><code><span class="c"># system dependencies</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="c"># system dependencies</span>
 <span class="k">sudo pacman -S</span> <span class="v">python-gobject python-dbus python-cairo gtk4 libadwaita</span>
 
 <span class="c"># install via pip</span>
@@ -491,26 +620,39 @@
 
 <span class="c"># or install from AUR</span>
 <span class="k">paru -S</span> <span class="v">something-x</span></code></pre>
+      </div>
 
       <h3 id="install-ubuntu">Ubuntu 24.04+</h3>
-      <pre><code><span class="k">sudo apt install</span> <span class="v">python3-gi python3-dbus python3-cairo gir1.2-gtk-4.0 gir1.2-adw-1</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="k">sudo apt install</span> <span class="v">python3-gi python3-dbus python3-cairo gir1.2-gtk-4.0 gir1.2-adw-1</span>
 <span class="k">pip install</span> <span class="v">something-x</span></code></pre>
+      </div>
 
       <h3 id="install-fedora">Fedora 39+</h3>
-      <pre><code><span class="k">sudo dnf install</span> <span class="v">python3-gobject python3-dbus python3-cairo gtk4 libadwaita</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="k">sudo dnf install</span> <span class="v">python3-gobject python3-dbus python3-cairo gtk4 libadwaita</span>
 <span class="k">pip install</span> <span class="v">something-x</span></code></pre>
+      </div>
 
       <h3 id="install-nix">NixOS</h3>
-      <pre><code><span class="c"># run directly from the flake</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="c"># run directly from the flake</span>
 <span class="k">nix run</span> <span class="v">github:SoaOaoS/something-x</span>
 
 <span class="c"># add as an input in your system flake — see flake.nix in the repository</span></code></pre>
+      </div>
 
       <h3 id="install-source">From Source</h3>
-      <pre><code><span class="k">git clone</span> <span class="v">https://github.com/SoaOaoS/something-x</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="k">git clone</span> <span class="v">https://github.com/SoaOaoS/something-x</span>
 <span class="k">cd</span> something-x
 <span class="c"># install system deps for your distro first, then:</span>
 <span class="k">./somethingx</span></code></pre>
+      </div>
     </div>
 
     <!-- ── First Launch ──────────────────────────────────────────────────── -->
@@ -526,7 +668,8 @@
       </ol>
 
       <div class="callout callout-note">
-        <strong>Bluetooth must be paired first.</strong> Use your desktop's Bluetooth manager or <code>bluetoothctl</code> to pair before launching Something X.
+        <div class="callout-type">Note</div>
+        <p><strong>Bluetooth must be paired first.</strong> Use your desktop's Bluetooth manager or <code>bluetoothctl</code> to pair before launching Something X.</p>
       </div>
     </div>
 
@@ -590,24 +733,39 @@
       <p>All CLI flags connect to the running app instance (or start a headless one) over the Gio D-Bus single-instance channel, so the GUI and CLI always share state.</p>
 
       <h3 id="cli-battery">--battery</h3>
-      <pre><code><span class="k">something-x</span> <span class="v">--battery</span></code></pre>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="k">something-x</span> <span class="v">--battery</span></code></pre>
+      </div>
       <p>Prints L / R / Case battery percentages and exits. Returns non-zero if no device is connected.</p>
 
       <h3 id="cli-anc">--anc</h3>
-      <pre><code><span class="k">something-x</span> <span class="v">--anc</span> <span class="s">off</span><span class="k"> | </span><span class="s">on</span><span class="k"> | </span><span class="s">transparency</span></code></pre>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="k">something-x</span> <span class="v">--anc</span> <span class="s">off</span><span class="k"> | </span><span class="s">on</span><span class="k"> | </span><span class="s">transparency</span></code></pre>
+      </div>
       <p>Sets the ANC mode. <code>on</code> maps to Noise Cancellation. The setting is persisted to the device profile.</p>
 
       <h3 id="cli-eq">--eq</h3>
-      <pre><code><span class="k">something-x</span> <span class="v">--eq</span> <span class="s">balanced</span><span class="k"> | </span><span class="s">bass</span><span class="k"> | </span><span class="s">treble</span><span class="k"> | </span><span class="s">voice</span></code></pre>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="k">something-x</span> <span class="v">--eq</span> <span class="s">balanced</span><span class="k"> | </span><span class="s">bass</span><span class="k"> | </span><span class="s">treble</span><span class="k"> | </span><span class="s">voice</span></code></pre>
+      </div>
       <p>Switches the EQ preset. Saved to the device profile.</p>
 
       <h3 id="cli-device">--device</h3>
-      <pre><code><span class="k">something-x</span> <span class="v">--device</span> <span class="s">AA:BB:CC:DD:EE:FF</span> <span class="v">--battery</span></code></pre>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="k">something-x</span> <span class="v">--device</span> <span class="s">AA:BB:CC:DD:EE:FF</span> <span class="v">--battery</span></code></pre>
+      </div>
       <p>Targets a specific device by Bluetooth address. Useful when multiple Nothing / CMF devices are connected simultaneously.</p>
 
       <h3>Combining flags</h3>
-      <pre><code><span class="c"># set ANC and EQ in one call</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="c"># set ANC and EQ in one call</span>
 <span class="k">something-x</span> <span class="v">--anc</span> <span class="s">on</span> <span class="v">--eq</span> <span class="s">bass</span></code></pre>
+      </div>
     </div>
 
     <hr>
@@ -616,14 +774,20 @@
     <div class="doc-section" id="profiles">
       <h2>Device Profiles <a class="anchor" href="#profiles">#</a></h2>
       <p>ANC mode and EQ preset are saved per Bluetooth address to:</p>
-      <pre><code>~/.config/something-x/profiles.json</code></pre>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code>~/.config/something-x/profiles.json</code></pre>
+      </div>
       <p>The file is plain JSON and safe to edit manually. Each key is a Bluetooth MAC address:</p>
-      <pre><code><span class="kw">{</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="kw">{</span>
   <span class="s">"AA:BB:CC:DD:EE:FF"</span><span class="k">:</span> <span class="kw">{</span>
     <span class="s">"anc"</span><span class="k">:</span>  <span class="s">"noise_cancellation"</span><span class="k">,</span>
     <span class="s">"eq"</span><span class="k">:</span>   <span class="s">"balanced"</span>
   <span class="kw">}</span>
 <span class="kw">}</span></code></pre>
+      </div>
       <p>Profiles are applied automatically when the device connects over RFCOMM, with no user interaction required.</p>
     </div>
 
@@ -631,11 +795,15 @@
     <div class="doc-section" id="desktop-entry">
       <h2>Desktop Entry <a class="anchor" href="#desktop-entry">#</a></h2>
       <p>A <code>.desktop</code> file is bundled in <code>nothing_app/data/</code>. Install it so Something X appears in Walker, Rofi, GNOME Shell, or any XDG-compliant launcher:</p>
-      <pre><code><span class="k">cp</span> nothing_app/data/com.something.x.omarchy.desktop \
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="k">cp</span> nothing_app/data/com.something.x.omarchy.desktop \
    ~/.local/share/applications/
 <span class="k">update-desktop-database</span> ~/.local/share/applications/</code></pre>
+      </div>
       <div class="callout callout-note">
-        If installed via pip, the <code>.desktop</code> file is placed automatically by the installer.
+        <div class="callout-type">Note</div>
+        <p>If installed via pip, the <code>.desktop</code> file is placed automatically by the installer.</p>
       </div>
     </div>
 
@@ -682,7 +850,8 @@
       </div>
 
       <div class="callout callout-warn">
-        <strong>CRC is mandatory.</strong> The device silently drops SET commands if any frame in the session was sent without a valid CRC16-ARC checksum.
+        <div class="callout-type">Warning</div>
+        <p><strong>CRC is mandatory.</strong> The device silently drops SET commands if any frame in the session was sent without a valid CRC16-ARC checksum.</p>
       </div>
 
       <h3 id="commands">Command IDs</h3>
@@ -710,17 +879,23 @@
       <p>Contributions are welcome, especially protocol work for unverified devices. The best place to start is <a href="https://github.com/SoaOaoS/something-x/issues">GitHub Issues</a>.</p>
 
       <h3>Development setup</h3>
-      <pre><code><span class="k">git clone</span> <span class="v">https://github.com/SoaOaoS/something-x</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="k">git clone</span> <span class="v">https://github.com/SoaOaoS/something-x</span>
 <span class="k">cd</span> something-x
 <span class="c"># install system deps for your distro, then run directly:</span>
 <span class="k">./somethingx</span></code></pre>
+      </div>
     </div>
 
     <!-- ── Debug Mode ────────────────────────────────────────────────────── -->
     <div class="doc-section" id="debug-mode">
       <h2>Debug Mode <a class="anchor" href="#debug-mode">#</a></h2>
       <p>Set <code>SOMETHING_X_DEBUG=1</code> to dump every raw RFCOMM frame to stdout:</p>
-      <pre><code><span class="k">SOMETHING_X_DEBUG=1</span> <span class="v">./somethingx</span></code></pre>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><code><span class="k">SOMETHING_X_DEBUG=1</span> <span class="v">./somethingx</span></code></pre>
+      </div>
       <p>If your device doesn't work as expected, capture the debug output and open an issue — include the raw frames so the command IDs can be identified.</p>
     </div>
 
@@ -769,7 +944,6 @@
       <p>See the <a href="https://github.com/SoaOaoS/something-x/releases">GitHub Releases page</a> for the full changelog. Releases are generated automatically from Conventional Commits on every push to <code>main</code>.</p>
     </div>
 
-    <!-- Footer -->
     <div class="doc-footer">
       <a href="index.html">← Back to Home</a>
       <a href="https://github.com/SoaOaoS/something-x">GitHub →</a>
@@ -778,24 +952,91 @@
 
   </main>
 
-</div><!-- /layout -->
+  <!-- TOC -->
+  <nav class="toc" aria-label="On this page">
+    <div class="toc-label">On this page</div>
+    <a href="#overview">Overview</a>
+    <a href="#requirements">Requirements</a>
+    <a href="#installation">Installation</a>
+    <a href="#first-launch">First Launch</a>
+    <a href="#home-page">Home Page</a>
+    <a href="#device-page">Device Page</a>
+    <a href="#background-mode">Background Mode</a>
+    <a href="#tray">System Tray</a>
+    <a href="#cli">CLI Reference</a>
+    <a href="#profiles">Device Profiles</a>
+    <a href="#desktop-entry">Desktop Entry</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#protocol">RFCOMM Protocol</a>
+    <a href="#contributing">Contributing</a>
+    <a href="#debug-mode">Debug Mode</a>
+    <a href="#versioning">Versioning</a>
+    <a href="#troubleshooting">Troubleshooting</a>
+    <a href="#changelog">Changelog</a>
+  </nav>
+
+</div>
+
+<button class="back-top" id="back-top" aria-label="Back to top" title="Back to top">↑</button>
 
 <script>
-  // Sidebar active link on scroll
-  const links = document.querySelectorAll('.sidebar-link, .sidebar-sub');
+  // Sidebar scrollspy
+  const sidebarLinks = document.querySelectorAll('.sidebar-link, .sidebar-sub');
+  const tocLinks = document.querySelectorAll('.toc a');
   const sections = [...document.querySelectorAll('[id]')];
 
   const obs = new IntersectionObserver(entries => {
     entries.forEach(e => {
       if (e.isIntersecting) {
-        links.forEach(l => l.classList.remove('active'));
-        const active = document.querySelector('.sidebar a[href="#' + e.target.id + '"]');
-        if (active) active.classList.add('active');
+        const id = e.target.id;
+        sidebarLinks.forEach(l => l.classList.remove('active'));
+        tocLinks.forEach(l => l.classList.remove('active'));
+        const sActive = document.querySelector('.sidebar a[href="#' + id + '"]');
+        const tActive = document.querySelector('.toc a[href="#' + id + '"]');
+        if (sActive) sActive.classList.add('active');
+        if (tActive) tActive.classList.add('active');
       }
     });
   }, { rootMargin: '-' + (56 + 32) + 'px 0px -60% 0px' });
 
   sections.forEach(s => obs.observe(s));
+
+  // Copy buttons
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pre = btn.nextElementSibling;
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        btn.textContent = 'COPIED';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
+      });
+    });
+  });
+
+  // Mobile sidebar toggle
+  const sidebarBtn = document.querySelector('.nav-sidebar-btn');
+  const layout = document.getElementById('layout');
+  const backdrop = document.getElementById('sidebar-backdrop');
+
+  function closeSidebar() {
+    layout.classList.remove('sidebar-open');
+    sidebarBtn.setAttribute('aria-expanded', 'false');
+  }
+  sidebarBtn.addEventListener('click', () => {
+    const open = layout.classList.toggle('sidebar-open');
+    sidebarBtn.setAttribute('aria-expanded', open);
+  });
+  backdrop.addEventListener('click', closeSidebar);
+  document.querySelectorAll('.sidebar a').forEach(a => {
+    a.addEventListener('click', () => { if (window.innerWidth <= 700) closeSidebar(); });
+  });
+
+  // Back to top
+  const backTop = document.getElementById('back-top');
+  window.addEventListener('scroll', () => {
+    backTop.classList.toggle('visible', window.scrollY > 400);
+  }, { passive: true });
+  backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 </script>
 
 </body>

@@ -4,22 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Something X — For Linux</title>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --red:          #e83535;
-      --red-dim:      rgba(232,53,53,0.12);
-      --red-glow:     rgba(232,53,53,0.35);
-      --bg:           #000000;
-      --surface:      rgba(255,255,255,0.04);
-      --surface-h:    rgba(255,255,255,0.07);
-      --border:       rgba(255,255,255,0.08);
-      --border-h:     rgba(255,255,255,0.14);
-      --text:         #ffffff;
-      --text-2:       rgba(255,255,255,0.55);
-      --text-3:       rgba(255,255,255,0.28);
-      --text-4:       rgba(255,255,255,0.09);
-      --mono:         'JetBrains Mono', 'Courier New', monospace;
+      --red:       #e83535;
+      --red-dim:   rgba(232,53,53,0.12);
+      --red-glow:  rgba(232,53,53,0.35);
+      --bg:        #000000;
+      --surface:   rgba(255,255,255,0.04);
+      --surface-h: rgba(255,255,255,0.07);
+      --border:    rgba(255,255,255,0.08);
+      --border-h:  rgba(255,255,255,0.16);
+      --text:      #f0f0f0;
+      --text-2:    rgba(255,255,255,0.72);
+      --text-3:    rgba(255,255,255,0.50);
+      --text-4:    rgba(255,255,255,0.28);
+      --mono:      'JetBrains Mono', 'Courier New', monospace;
+      --sans:      'Inter', system-ui, -apple-system, sans-serif;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -28,9 +29,23 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: var(--mono);
+      font-family: var(--sans);
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--red);
+      outline-offset: 3px;
+      border-radius: 3px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
     }
 
     /* ── Nav ─────────────────────────────────────────────────────────────── */
@@ -40,7 +55,7 @@
       height: 56px;
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 40px;
-      background: rgba(0,0,0,0.82);
+      background: rgba(0,0,0,0.88);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
     }
@@ -48,6 +63,7 @@
     .nav-brand {
       display: flex; align-items: center; gap: 10px;
       text-decoration: none; color: var(--text);
+      font-family: var(--mono);
       font-size: 12px; font-weight: 700; letter-spacing: 3.5px;
       text-transform: uppercase;
     }
@@ -65,11 +81,45 @@
 
     .nav-links { display: flex; gap: 28px; list-style: none; }
     .nav-links a {
-      text-decoration: none; color: var(--text-2);
+      text-decoration: none; color: var(--text-3);
+      font-family: var(--mono);
       font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase;
       transition: color 150ms;
     }
     .nav-links a:hover { color: var(--text); }
+
+    .nav-burger {
+      display: none; flex-direction: column; justify-content: center;
+      gap: 5px; background: none; border: none;
+      cursor: pointer; padding: 8px; color: var(--text-3);
+    }
+    .nav-burger span {
+      display: block; width: 20px; height: 1.5px;
+      background: currentColor; border-radius: 1px;
+      transition: transform 220ms ease, opacity 220ms ease;
+    }
+    .nav-burger[aria-expanded="true"] span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .nav-burger[aria-expanded="true"] span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    .nav-burger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+    .mobile-menu {
+      display: none; position: fixed;
+      top: 56px; left: 0; right: 0; z-index: 99;
+      background: rgba(4,4,4,0.97);
+      backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border);
+    }
+    .mobile-menu.open { display: block; }
+    .mobile-menu a {
+      display: block; padding: 15px 24px;
+      font-family: var(--mono); font-size: 11px; font-weight: 600;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--text-3); text-decoration: none;
+      border-bottom: 1px solid var(--border);
+      transition: color 150ms, background 150ms;
+    }
+    .mobile-menu a:last-child { border-bottom: none; }
+    .mobile-menu a:hover { color: var(--text); background: var(--surface); }
 
     /* ── Hero ────────────────────────────────────────────────────────────── */
 
@@ -82,7 +132,6 @@
       position: relative; overflow: hidden;
     }
 
-    /* background radial glow */
     .hero::before {
       content: '';
       position: absolute; inset: 0;
@@ -91,7 +140,6 @@
       pointer-events: none;
     }
 
-    /* dot + ripples */
     .dot-stage {
       position: relative; width: 80px; height: 80px;
       display: flex; align-items: center; justify-content: center;
@@ -123,6 +171,7 @@
     }
 
     .hero-title {
+      font-family: var(--mono);
       font-size: clamp(40px, 7vw, 80px);
       font-weight: 700; letter-spacing: 10px;
       text-transform: uppercase; line-height: 1;
@@ -132,6 +181,7 @@
     .hero-title .x { color: var(--red); }
 
     .hero-sub {
+      font-family: var(--mono);
       font-size: 11px; font-weight: 400;
       letter-spacing: 7px; text-transform: uppercase;
       color: var(--text-3);
@@ -148,8 +198,9 @@
     @keyframes rule-expand { to { width: 60px; } }
 
     .hero-caption {
-      font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
-      color: var(--text-4);
+      font-family: var(--mono);
+      font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
+      color: var(--text-3);
       margin-bottom: 56px;
       animation: fade-up 0.9s 0.6s ease both;
     }
@@ -166,7 +217,8 @@
     }
 
     .btn {
-      display: inline-block; text-decoration: none;
+      display: inline-flex; align-items: center; justify-content: center;
+      text-decoration: none;
       font-family: var(--mono); font-size: 11px; font-weight: 700;
       letter-spacing: 2.5px; text-transform: uppercase;
       padding: 13px 26px; border-radius: 12px;
@@ -178,7 +230,7 @@
       border-color: var(--red);
     }
     .btn-primary:hover {
-      background: #c72a2a;
+      background: #cc2d2d;
       box-shadow: 0 4px 28px rgba(232,53,53,0.45);
     }
     .btn-ghost {
@@ -188,10 +240,10 @@
     .btn-ghost:hover { background: var(--surface-h); border-color: var(--border-h); }
 
     .hero-install {
-      display: flex; align-items: center; gap: 12px;
+      display: inline-flex; align-items: center; gap: 12px;
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 12px; padding: 14px 22px;
-      font-size: 13px; color: var(--text-2);
+      font-family: var(--mono); font-size: 13px; color: var(--text-2);
       animation: fade-up 0.9s 0.45s ease both;
     }
     .hero-install .prompt { color: rgba(232,53,53,0.65); }
@@ -209,16 +261,19 @@
     }
 
     .eyebrow {
-      font-size: 9px; font-weight: 700; letter-spacing: 5px;
+      font-family: var(--mono);
+      font-size: 10px; font-weight: 700; letter-spacing: 5px;
       text-transform: uppercase; color: var(--red);
       margin-bottom: 10px;
     }
     .section-h {
+      font-family: var(--mono);
       font-size: clamp(22px, 3vw, 34px); font-weight: 700;
-      letter-spacing: 2px; margin-bottom: 10px;
+      letter-spacing: 2px; margin-bottom: 12px;
     }
     .section-lead {
-      font-size: 13px; color: var(--text-2); line-height: 1.8;
+      font-family: var(--sans);
+      font-size: 15px; color: var(--text-2); line-height: 1.75;
       max-width: 520px; margin-bottom: 48px;
     }
 
@@ -241,15 +296,25 @@
     }
 
     .card-icon {
-      display: block; font-size: 18px;
-      color: var(--red); margin-bottom: 14px;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--red-dim); border: 1px solid rgba(232,53,53,0.20);
+      color: var(--red); font-size: 16px; font-family: var(--mono);
+      margin-bottom: 16px;
     }
     .card-title {
-      font-size: 13px; font-weight: 700; letter-spacing: 1px;
-      margin-bottom: 8px; color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px; font-weight: 700; letter-spacing: 0.5px;
+      margin-bottom: 10px; color: var(--text);
     }
     .card-desc {
-      font-size: 12px; color: var(--text-2); line-height: 1.75;
+      font-family: var(--sans);
+      font-size: 14px; color: var(--text-2); line-height: 1.72;
+    }
+    .card-desc code {
+      font-family: var(--mono); font-size: 12px;
+      background: rgba(255,255,255,0.07); padding: 1px 5px;
+      border-radius: 4px; color: var(--text);
     }
 
     /* ── Install block ───────────────────────────────────────────────────── */
@@ -280,17 +345,36 @@
     .tab-panel { display: none; padding: 28px; }
     .tab-panel.active { display: block; }
 
+    .pre-wrap { position: relative; }
+
     pre {
       background: rgba(255,255,255,0.025);
       border: 1px solid rgba(255,255,255,0.06);
       border-radius: 10px; padding: 18px 20px;
-      overflow-x: auto; line-height: 1.65;
+      overflow-x: auto; line-height: 1.7;
       font-family: var(--mono); font-size: 13px;
     }
-    pre .c { color: rgba(255,255,255,0.24); }   /* comment */
-    pre .k { color: var(--text-2); }             /* keyword/cmd */
-    pre .v { color: rgba(232,53,53,0.75); }      /* value/arg */
-    pre .t { color: var(--text); }               /* plain text */
+    pre .c { color: rgba(255,255,255,0.32); }
+    pre .k { color: var(--text-2); }
+    pre .v { color: rgba(232,53,53,0.85); }
+    pre .t { color: var(--text); }
+
+    .copy-btn {
+      position: absolute; top: 10px; right: 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 6px; padding: 4px 10px;
+      font-family: var(--mono); font-size: 9px; font-weight: 600;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--text-3); cursor: pointer;
+      transition: background 150ms, color 150ms, border-color 150ms;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.10); color: var(--text-2); border-color: var(--border-h); }
+    .copy-btn.copied {
+      color: rgba(143,223,114,0.9);
+      border-color: rgba(143,223,114,0.3);
+      background: rgba(143,223,114,0.06);
+    }
 
     /* ── CLI preview ─────────────────────────────────────────────────────── */
 
@@ -307,10 +391,10 @@
       display: block;
       font-family: var(--mono); font-size: 12px; color: var(--text);
       background: rgba(255,255,255,0.05); border-radius: 6px;
-      padding: 8px 12px; margin-bottom: 10px;
+      padding: 8px 12px; margin-bottom: 12px;
     }
-    .cli-card code .flag { color: rgba(232,53,53,0.8); }
-    .cli-card p { font-size: 12px; color: var(--text-2); line-height: 1.6; }
+    .cli-card code .flag { color: rgba(232,53,53,0.85); }
+    .cli-card p { font-family: var(--sans); font-size: 14px; color: var(--text-2); line-height: 1.65; }
 
     /* ── Footer ──────────────────────────────────────────────────────────── */
 
@@ -322,6 +406,7 @@
     }
     .footer-brand {
       display: flex; align-items: center; gap: 10px;
+      font-family: var(--mono);
       font-size: 11px; font-weight: 700; letter-spacing: 3px;
       text-transform: uppercase; color: var(--text-3);
     }
@@ -329,15 +414,15 @@
       width: 6px; height: 6px; border-radius: 50%;
       background: var(--red); opacity: 0.6;
     }
-    .footer-links {
-      display: flex; gap: 24px; list-style: none;
-    }
+    .footer-links { display: flex; gap: 24px; list-style: none; }
     .footer-links a {
+      font-family: var(--mono);
       font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase;
       color: var(--text-3); text-decoration: none; transition: color 150ms;
     }
     .footer-links a:hover { color: var(--text-2); }
     .footer-copy {
+      font-family: var(--mono);
       font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
       color: var(--text-4); width: 100%;
     }
@@ -345,13 +430,15 @@
     @media (max-width: 600px) {
       nav { padding: 0 20px; }
       .nav-links { display: none; }
+      .nav-burger { display: flex; }
       footer { padding: 32px 20px; }
+      .hero-title { letter-spacing: 6px; }
+      .section { padding: 64px 20px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── Nav ──────────────────────────────────────────────────────────────── -->
 <nav>
   <a class="nav-brand" href="#">
     <span class="nav-dot"></span>
@@ -364,9 +451,19 @@
     <li><a href="docs.html">Docs</a></li>
     <li><a href="https://github.com/SoaOaoS/something-x">GitHub</a></li>
   </ul>
+  <button class="nav-burger" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobile-menu">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
 
-<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+<div class="mobile-menu" id="mobile-menu">
+  <a href="#features">Features</a>
+  <a href="#install">Install</a>
+  <a href="#cli">CLI</a>
+  <a href="docs.html">Docs</a>
+  <a href="https://github.com/SoaOaoS/something-x">GitHub</a>
+</div>
+
 <section class="hero">
   <div class="dot-stage">
     <span class="ripple"></span>
@@ -394,7 +491,6 @@
 
 <hr>
 
-<!-- ── Features ─────────────────────────────────────────────────────────── -->
 <section class="section" id="features">
   <p class="eyebrow">Features</p>
   <h2 class="section-h">Everything your earbuds need</h2>
@@ -409,12 +505,12 @@
     <div class="card">
       <span class="card-icon">◈</span>
       <div class="card-title">EQ Presets</div>
-      <div class="card-desc">Balanced · More Bass · More Treble · Voice. Per-device profiles persisted to <code style="font-size:11px;background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:4px">~/.config/something-x/</code>.</div>
+      <div class="card-desc">Balanced · More Bass · More Treble · Voice. Per-device profiles persisted to <code>~/.config/something-x/</code>.</div>
     </div>
     <div class="card">
       <span class="card-icon">◎</span>
       <div class="card-title">Battery Monitor</div>
-      <div class="card-desc">Real-time L / R / Case battery rings with radial gradients. Low-battery <code style="font-size:11px;background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:4px">notify-send</code> at 20 %.</div>
+      <div class="card-desc">Real-time L / R / Case battery rings with radial gradients. Low-battery <code>notify-send</code> at 20 %.</div>
     </div>
     <div class="card">
       <span class="card-icon">▸</span>
@@ -434,7 +530,7 @@
     <div class="card">
       <span class="card-icon">◻</span>
       <div class="card-title">Volume Control</div>
-      <div class="card-desc">Slider controls the PulseAudio / PipeWire A2DP sink via <code style="font-size:11px;background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:4px">pactl</code>. Works on any modern audio stack.</div>
+      <div class="card-desc">Slider controls the PulseAudio / PipeWire A2DP sink via <code>pactl</code>. Works on any modern audio stack.</div>
     </div>
     <div class="card">
       <span class="card-icon">◍</span>
@@ -451,7 +547,6 @@
 
 <hr>
 
-<!-- ── Install ───────────────────────────────────────────────────────────── -->
 <section class="section" id="install">
   <p class="eyebrow">Installation</p>
   <h2 class="section-h">Get up and running</h2>
@@ -468,7 +563,9 @@
     </div>
 
     <div class="tab-panel active" id="panel-arch">
-      <pre><span class="c"># 1 — system dependencies</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><span class="c"># 1 — system dependencies</span>
 <span class="k">sudo pacman -S</span> <span class="v">python-gobject python-dbus python-cairo gtk4 libadwaita</span>
 
 <span class="c"># 2 — install</span>
@@ -476,10 +573,13 @@
 
 <span class="c"># 3 — launch</span>
 <span class="k">something-x</span></pre>
+      </div>
     </div>
 
     <div class="tab-panel" id="panel-ubuntu">
-      <pre><span class="c"># 1 — system dependencies (Ubuntu 24.04+)</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><span class="c"># 1 — system dependencies (Ubuntu 24.04+)</span>
 <span class="k">sudo apt install</span> <span class="v">python3-gi python3-dbus python3-cairo gir1.2-gtk-4.0 gir1.2-adw-1</span>
 
 <span class="c"># 2 — install</span>
@@ -487,10 +587,13 @@
 
 <span class="c"># 3 — launch</span>
 <span class="k">something-x</span></pre>
+      </div>
     </div>
 
     <div class="tab-panel" id="panel-fedora">
-      <pre><span class="c"># 1 — system dependencies (Fedora 39+)</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><span class="c"># 1 — system dependencies (Fedora 39+)</span>
 <span class="k">sudo dnf install</span> <span class="v">python3-gobject python3-dbus python3-cairo gtk4 libadwaita</span>
 
 <span class="c"># 2 — install</span>
@@ -498,10 +601,13 @@
 
 <span class="c"># 3 — launch</span>
 <span class="k">something-x</span></pre>
+      </div>
     </div>
 
     <div class="tab-panel" id="panel-opensuse">
-      <pre><span class="c"># 1 — system dependencies</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><span class="c"># 1 — system dependencies</span>
 <span class="k">sudo zypper install</span> <span class="v">python3-gobject python3-dbus python3-cairo gtk4 libadwaita</span>
 
 <span class="c"># 2 — install</span>
@@ -509,27 +615,33 @@
 
 <span class="c"># 3 — launch</span>
 <span class="k">something-x</span></pre>
+      </div>
     </div>
 
     <div class="tab-panel" id="panel-nix">
-      <pre><span class="c"># run directly from the flake</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><span class="c"># run directly from the flake</span>
 <span class="k">nix run</span> <span class="v">github:SoaOaoS/something-x</span>
 
 <span class="c"># or add to your system flake inputs — see flake.nix in the repo</span></pre>
+      </div>
     </div>
 
     <div class="tab-panel" id="panel-source">
-      <pre><span class="k">git clone</span> <span class="v">https://github.com/SoaOaoS/something-x</span>
+      <div class="pre-wrap">
+        <button class="copy-btn" aria-label="Copy code">COPY</button>
+        <pre><span class="k">git clone</span> <span class="v">https://github.com/SoaOaoS/something-x</span>
 <span class="k">cd</span> <span class="v">something-x</span>
 <span class="c"># install system deps for your distro first, then:</span>
 <span class="k">./somethingx</span></pre>
+      </div>
     </div>
   </div>
 </section>
 
 <hr>
 
-<!-- ── CLI ───────────────────────────────────────────────────────────────── -->
 <section class="section" id="cli">
   <p class="eyebrow">CLI</p>
   <h2 class="section-h">Terminal-first controls</h2>
@@ -557,7 +669,6 @@
 
 <hr>
 
-<!-- ── Footer ────────────────────────────────────────────────────────────── -->
 <footer>
   <div class="footer-brand">
     <span class="footer-dot"></span>
@@ -580,6 +691,30 @@
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById('panel-' + id).classList.add('active');
+    });
+  });
+
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const text = btn.nextElementSibling.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'COPIED';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
+      });
+    });
+  });
+
+  const burger = document.querySelector('.nav-burger');
+  const mobileMenu = document.getElementById('mobile-menu');
+  burger.addEventListener('click', () => {
+    const open = mobileMenu.classList.toggle('open');
+    burger.setAttribute('aria-expanded', open);
+  });
+  mobileMenu.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      mobileMenu.classList.remove('open');
+      burger.setAttribute('aria-expanded', 'false');
     });
   });
 </script>
