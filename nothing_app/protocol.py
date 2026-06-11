@@ -123,6 +123,8 @@ class DeviceState:
     serial_number: str = "—"
     left_wearing: bool = False
     right_wearing: bool = False
+    # None = not yet determined (show all); frozenset = confirmed supported modes
+    supported_anc_modes: frozenset | None = None
 
 
 # ── Device class ─────────────────────────────────────────────────────────────
@@ -451,7 +453,15 @@ class NothingDevice(GObject.Object):
                 _log(f"[protocol] firmware={ver!r}")
                 changed = True
         elif cmd_id == _CMD_REMOTE_CONF:
-            sn = payload.decode(errors="replace").strip("\x00").strip()
+            # Payload is newline-separated "device_id,field_id,value" entries.
+            # field 4 = serial number (e.g. SH10212543006451)
+            raw = payload.decode(errors="replace").strip("\x00")
+            sn = None
+            for line in raw.splitlines():
+                parts = line.split(",", 2)
+                if len(parts) == 3 and parts[1] == "4" and parts[2].strip():
+                    sn = parts[2].strip()
+                    break
             if sn and sn != self.state.serial_number:
                 self.state.serial_number = sn
                 _log(f"[protocol] serial={sn!r}")
@@ -500,9 +510,12 @@ class NothingDevice(GObject.Object):
     def _parse_anc(self, payload: bytes) -> bool:
         # Payload: [type:1][value:1][pad:1] triplets
         #   type=1: NOISE_REDUCTION_MODE  type=2: NOISE_REDUCTION_LEVEL (last active level)
+        #   level val 1–4 = ANC strength → ANC is supported
+        #   level val 0 or 0xFE = no ANC strength → only Off + Transparency
         if len(payload) < 3:
             return False
         changed = False
+        level_val: int | None = None
         for i in range(0, len(payload) - 2, 3):
             t, val = payload[i], payload[i + 1]
             if t == 1:  # NOISE_REDUCTION_MODE
@@ -516,8 +529,25 @@ class NothingDevice(GObject.Object):
                     self.state.anc_mode = mode
                     _log(f"[protocol] ANC mode → {ANCMode.LABELS.get(mode, mode)} (wire val {val})")
                     changed = True
-            elif t == 2 and 1 <= val <= 4:  # NOISE_REDUCTION_LEVEL (ANC strength 1–4)
-                self._last_anc_level = val
+            elif t == 2:  # NOISE_REDUCTION_LEVEL
+                level_val = val
+                if 1 <= val <= 4:
+                    self._last_anc_level = val
+
+        # First time we see a level entry, lock in supported modes.
+        # val 1–4 = ANC strength present → all three modes are available.
+        # val 0 or 0xFE = no ANC strength → device only supports Off + Transparency.
+        if level_val is not None and self.state.supported_anc_modes is None:
+            if 1 <= level_val <= 4:
+                modes = frozenset([ANCMode.OFF, ANCMode.NOISE_CANCELLATION, ANCMode.TRANSPARENCY])
+            else:
+                modes = frozenset([ANCMode.OFF, ANCMode.TRANSPARENCY])
+            self.state.supported_anc_modes = modes
+            _log(
+                f"[protocol] supported ANC modes detected: {[ANCMode.LABELS.get(m, m) for m in sorted(modes)]}"
+            )
+            changed = True
+
         return changed
 
     def _parse_earphone_status(self, payload: bytes) -> bool:
