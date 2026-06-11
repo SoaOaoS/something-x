@@ -453,7 +453,15 @@ class NothingDevice(GObject.Object):
                 _log(f"[protocol] firmware={ver!r}")
                 changed = True
         elif cmd_id == _CMD_REMOTE_CONF:
-            sn = payload.decode(errors="replace").strip("\x00").strip()
+            # Payload is newline-separated "device_id,field_id,value" entries.
+            # field 4 = serial number (e.g. SH10212543006451)
+            raw = payload.decode(errors="replace").strip("\x00")
+            sn = None
+            for line in raw.splitlines():
+                parts = line.split(",", 2)
+                if len(parts) == 3 and parts[1] == "4" and parts[2].strip():
+                    sn = parts[2].strip()
+                    break
             if sn and sn != self.state.serial_number:
                 self.state.serial_number = sn
                 _log(f"[protocol] serial={sn!r}")
