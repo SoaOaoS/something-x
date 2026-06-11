@@ -4,6 +4,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
+from . import __version__
 from .bluetooth import BluetoothDevice, BluetoothManager
 from .protocol import NothingDevice
 from .pages.home import HomePage
@@ -60,7 +61,10 @@ class SomethingXWindow(Adw.ApplicationWindow):
 
         header = Adw.HeaderBar()
         header.add_css_class("nothing-header")
-        header.set_show_title(True)
+        title_widget = Adw.WindowTitle()
+        title_widget.set_title("Something X")
+        title_widget.set_subtitle(__version__)
+        header.set_title_widget(title_widget)
 
         bt_btn = Gtk.Button.new_from_icon_name("bluetooth-symbolic")
         bt_btn.set_tooltip_text("Bluetooth settings")

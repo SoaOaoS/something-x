@@ -68,6 +68,44 @@ jobs:
           git tag "v${{ steps.version.outputs.new }}"
           git push origin "v${{ steps.version.outputs.new }}"
 
+      # ── Generate changelog with git-cliff ──────────────────────────────
+      - name: Install git-cliff
+        if: steps.version.outputs.skip != 'true'
+        run: pip install git-cliff
+
+      - name: Generate release notes
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          # --latest: commits from the previous vX.Y.Z tag up to the tag we just pushed
+          # cliff.toml: skips merge commits, ignores dev-* tags, filters to conventional commits
+          git cliff --latest --strip all 2>/dev/null > /tmp/cliff_body.md
+          if [ ! -s /tmp/cliff_body.md ]; then
+            echo "No user-facing changes in this release." > /tmp/cliff_body.md
+          fi
+
+          # Prepend the header + install block; cliff body goes in the middle
+          cat > /tmp/release_notes.md <<HEADER
+          ## Something X v${{ steps.version.outputs.new }}
+
+          HEADER
+          cat /tmp/cliff_body.md >> /tmp/release_notes.md
+          cat >> /tmp/release_notes.md <<'FOOTER'
+
+          ### Install
+
+          ```bash
+          # Arch / Omarchy (recommended)
+          sudo pacman -S python-gobject python-dbus python-cairo gtk4 libadwaita
+          pip install something-x==${{ steps.version.outputs.new }}
+
+          # Or download the wheel below
+          pip install something_x-${{ steps.version.outputs.new }}-py3-none-any.whl
+          ```
+          FOOTER
+
+          echo "--- Release notes preview ---"
+          cat /tmp/release_notes.md
+
       # ── Build wheel + sdist ─────────────────────────────────────────────
       - name: Set up Python
         if: steps.version.outputs.skip != 'true'
