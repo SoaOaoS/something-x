@@ -136,6 +136,7 @@ class NothingDevice(GObject.Object):
         "connected": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "disconnected": (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
+    _LOW_BAT_THRESHOLDS = (20, 15, 10, 5)
 
     def __init__(self, address: str):
         super().__init__()
@@ -644,8 +645,6 @@ class NothingDevice(GObject.Object):
         if "eq" in p:
             eq_val = EQ_PRESETS.get(p["eq"], 0)
             self._x55_send(_CMD_SET_EQ, bytes([eq_val]), label=f"restore EQ={p['eq']}")
-
-    _LOW_BAT_THRESHOLDS = (20, 15, 10, 5)
 
     def _check_low_battery(self, slot: str, pct: int, label: str):
         if pct < 0:

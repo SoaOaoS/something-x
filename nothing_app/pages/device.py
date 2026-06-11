@@ -11,6 +11,7 @@ gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, GLib, PangoCairo
 
 from ..bluetooth import BluetoothDevice, BluetoothManager
+from ..protocol import NothingDevice, ANCMode, EQ_PRESETS
 
 
 def _mono_font() -> str:
@@ -22,7 +23,6 @@ def _mono_font() -> str:
 
 
 _MONO = _mono_font()
-from ..protocol import NothingDevice, ANCMode, EQ_PRESETS
 
 
 def _find_bt_sink(address: str) -> str | None:
@@ -303,8 +303,6 @@ class DevicePage(Gtk.Box):
         self._vol_handler: int | None = None
         self._bt_conn_handler = bt_manager.connect("device-connected", self._on_bt_device_connected)
         self._bt_disc_handler = bt_manager.connect("device-disconnected", self._on_bt_device_disconnected)
-        self._connect_retries = 0
-        self._connect_retry_id: int | None = None
         self._build()
         if bt_device.is_nothing:
             self._connect_nothing(nothing_dev)
@@ -546,11 +544,10 @@ class DevicePage(Gtk.Box):
             self._sn_label.set_label(state.serial_number or "—")
 
     def _on_rfcomm_connected(self, _dev):
-        print(f"[device page] RFCOMM connected to {self._bt_device.name}")
         GLib.timeout_add(800, self._query_volume)
 
     def _on_rfcomm_disconnected(self, _dev):
-        print(f"[device page] RFCOMM disconnected from {self._bt_device.name}")
+        pass
 
     def _query_volume(self):
         def _run():
