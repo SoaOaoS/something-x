@@ -46,11 +46,12 @@ dev = ["ruff", "pytest", "pytest-cov"]
 testpaths = ["tests"]
 
 [tool.setuptools_scm]
-# After tag v1.7.0, develop automatically produces 1.7.1.devN (N = commits since tag).
-# Strips the local +gHASH so PyPI accepts the version.
-version_scheme = "guess-next-dev"
-local_scheme   = "no-local-version"
-version_file   = "nothing_app/_version.py"
+# Only vX.Y.Z tags count — dev-HASH pre-release tags are ignored.
+tag_regex             = "^v(?P<version>[0-9]+\\.[0-9]+\\.[0-9]+)$"
+git_describe_command  = ["git", "describe", "--dirty", "--tags", "--long", "--match", "v[0-9]*.[0-9]*.[0-9]*"]
+version_scheme        = "guess-next-dev"
+local_scheme          = "no-local-version"
+version_file          = "nothing_app/_version.py"
 
 [tool.ruff]
 line-length = 110
