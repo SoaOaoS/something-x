@@ -11,6 +11,7 @@ gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, GLib, PangoCairo
 
 from ..bluetooth import BluetoothDevice, BluetoothManager
+from ..protocol import NothingDevice, ANCMode, EQ_PRESETS
 
 
 def _mono_font() -> str:
@@ -22,7 +23,6 @@ def _mono_font() -> str:
 
 
 _MONO = _mono_font()
-from ..protocol import NothingDevice, ANCMode, EQ_PRESETS
 
 
 def _find_bt_sink(address: str) -> str | None:
@@ -115,13 +115,13 @@ class EarbudVisual(Gtk.DrawingArea):
         r = 29
         bc = _battery_color(pct) if pct >= 0 else (0.18, 0.18, 0.18)
 
-        # outer diffuse glow (battery color)
-        for i in range(3):
-            rg = cairo.RadialGradient(cx, cy, R - 2, cx, cy, R + 14 + i * 8)
-            rg.add_color_stop_rgba(0, *bc, 0.10 - i * 0.025)
+        # outer diffuse glow — 4 layers for softer falloff
+        for i in range(4):
+            rg = cairo.RadialGradient(cx, cy, R - 2, cx, cy, R + 14 + i * 9)
+            rg.add_color_stop_rgba(0, *bc, 0.088 - i * 0.018)
             rg.add_color_stop_rgba(1, *bc, 0)
             cr.set_source(rg)
-            cr.arc(cx, cy, R + 14 + i * 8, 0, 2 * math.pi)
+            cr.arc(cx, cy, R + 14 + i * 9, 0, 2 * math.pi)
             cr.fill()
 
         # body: radial gradient for sphere depth
@@ -139,12 +139,20 @@ class EarbudVisual(Gtk.DrawingArea):
         cr.arc(cx, cy, R - 3, 0, 2 * math.pi)
         cr.stroke()
 
-        # battery arc (colored progress)
+        # battery arc bloom (wider, low alpha — behind the main arc)
         if pct > 0:
+            angle_end = -math.pi / 2 + (pct / 100) * 2 * math.pi
+            cr.set_source_rgba(*bc, 0.18)
+            cr.set_line_width(10)
+            cr.set_line_cap(cairo.LineCap.ROUND)
+            cr.arc(cx, cy, R - 3, -math.pi / 2, angle_end)
+            cr.stroke()
+
+            # battery arc (solid colored progress on top)
             cr.set_source_rgba(*bc, 1.0)
             cr.set_line_width(6)
             cr.set_line_cap(cairo.LineCap.ROUND)
-            cr.arc(cx, cy, R - 3, -math.pi / 2, -math.pi / 2 + (pct / 100) * 2 * math.pi)
+            cr.arc(cx, cy, R - 3, -math.pi / 2, angle_end)
             cr.stroke()
 
         # inner circle: radial gradient for glass depth
@@ -155,11 +163,26 @@ class EarbudVisual(Gtk.DrawingArea):
         cr.arc(cx, cy, r, 0, 2 * math.pi)
         cr.fill()
 
-        # glass highlight arc (top-left crescent)
-        cr.set_source_rgba(1.0, 1.0, 1.0, 0.10)
+        # specular hot-spot (small point light in upper-left)
+        spec = cairo.RadialGradient(cx - r * 0.42, cy - r * 0.42, 0, cx - r * 0.42, cy - r * 0.42, r * 0.40)
+        spec.add_color_stop_rgba(0, 1.0, 1.0, 1.0, 0.10)
+        spec.add_color_stop_rgba(1, 1.0, 1.0, 1.0, 0.0)
+        cr.set_source(spec)
+        cr.arc(cx, cy, r, 0, 2 * math.pi)
+        cr.fill()
+
+        # glass highlight arc — primary crescent
+        cr.set_source_rgba(1.0, 1.0, 1.0, 0.12)
         cr.set_line_width(4)
         cr.set_line_cap(cairo.LineCap.ROUND)
         cr.arc(cx, cy, r - 4, math.pi * 1.05, math.pi * 1.72)
+        cr.stroke()
+
+        # glass highlight arc — secondary (fainter, tighter)
+        cr.set_source_rgba(1.0, 1.0, 1.0, 0.05)
+        cr.set_line_width(2.5)
+        cr.set_line_cap(cairo.LineCap.ROUND)
+        cr.arc(cx, cy, r - 9, math.pi * 1.15, math.pi * 1.62)
         cr.stroke()
 
         # percentage text
@@ -175,7 +198,7 @@ class EarbudVisual(Gtk.DrawingArea):
         dot_y = cy + R + 8
         if wearing:
             rg = cairo.RadialGradient(cx, dot_y, 0, cx, dot_y, 9)
-            rg.add_color_stop_rgba(0, 0.87, 0.18, 0.18, 0.30)
+            rg.add_color_stop_rgba(0, 0.87, 0.18, 0.18, 0.26)
             rg.add_color_stop_rgba(1, 0.87, 0.18, 0.18, 0.0)
             cr.set_source(rg)
             cr.arc(cx, dot_y, 9, 0, 2 * math.pi)
@@ -195,16 +218,17 @@ class EarbudVisual(Gtk.DrawingArea):
         cr.show_text(label)
 
     def _draw_case(self, cr, cx, cy, pct):
-        R = 18
+        R = 20
         bc = _battery_color(pct) if pct >= 0 else (0.18, 0.18, 0.18)
 
-        # outer diffuse glow
-        rg = cairo.RadialGradient(cx, cy, R - 1, cx, cy, R + 14)
-        rg.add_color_stop_rgba(0, *bc, 0.09)
-        rg.add_color_stop_rgba(1, *bc, 0)
-        cr.set_source(rg)
-        cr.arc(cx, cy, R + 14, 0, 2 * math.pi)
-        cr.fill()
+        # outer diffuse glow — 2 layers
+        for i in range(2):
+            rg = cairo.RadialGradient(cx, cy, R - 1, cx, cy, R + 14 + i * 9)
+            rg.add_color_stop_rgba(0, *bc, 0.08 - i * 0.03)
+            rg.add_color_stop_rgba(1, *bc, 0)
+            cr.set_source(rg)
+            cr.arc(cx, cy, R + 14 + i * 9, 0, 2 * math.pi)
+            cr.fill()
 
         # body
         body = cairo.RadialGradient(cx - R * 0.28, cy - R * 0.28, R * 0.08, cx, cy, R)
@@ -220,16 +244,32 @@ class EarbudVisual(Gtk.DrawingArea):
         cr.arc(cx, cy, R - 2, 0, 2 * math.pi)
         cr.stroke()
 
-        # battery arc
+        # battery arc bloom (wider, lower alpha)
         if pct > 0:
+            angle_end = -math.pi / 2 + (pct / 100) * 2 * math.pi
+            cr.set_source_rgba(*bc, 0.16)
+            cr.set_line_width(7)
+            cr.set_line_cap(cairo.LineCap.ROUND)
+            cr.arc(cx, cy, R - 2, -math.pi / 2, angle_end)
+            cr.stroke()
+
+            # battery arc (solid)
             cr.set_source_rgba(*bc, 1.0)
             cr.set_line_width(4)
             cr.set_line_cap(cairo.LineCap.ROUND)
-            cr.arc(cx, cy, R - 2, -math.pi / 2, -math.pi / 2 + (pct / 100) * 2 * math.pi)
+            cr.arc(cx, cy, R - 2, -math.pi / 2, angle_end)
             cr.stroke()
 
+        # specular hot-spot
+        spec = cairo.RadialGradient(cx - R * 0.42, cy - R * 0.42, 0, cx - R * 0.42, cy - R * 0.42, R * 0.48)
+        spec.add_color_stop_rgba(0, 1.0, 1.0, 1.0, 0.10)
+        spec.add_color_stop_rgba(1, 1.0, 1.0, 1.0, 0.0)
+        cr.set_source(spec)
+        cr.arc(cx, cy, R, 0, 2 * math.pi)
+        cr.fill()
+
         # glass highlight
-        cr.set_source_rgba(1.0, 1.0, 1.0, 0.09)
+        cr.set_source_rgba(1.0, 1.0, 1.0, 0.11)
         cr.set_line_width(3)
         cr.set_line_cap(cairo.LineCap.ROUND)
         cr.arc(cx, cy, R - 4, math.pi * 1.05, math.pi * 1.72)
@@ -303,8 +343,6 @@ class DevicePage(Gtk.Box):
         self._vol_handler: int | None = None
         self._bt_conn_handler = bt_manager.connect("device-connected", self._on_bt_device_connected)
         self._bt_disc_handler = bt_manager.connect("device-disconnected", self._on_bt_device_disconnected)
-        self._connect_retries = 0
-        self._connect_retry_id: int | None = None
         self._build()
         if bt_device.is_nothing:
             self._connect_nothing(nothing_dev)
@@ -546,11 +584,10 @@ class DevicePage(Gtk.Box):
             self._sn_label.set_label(state.serial_number or "—")
 
     def _on_rfcomm_connected(self, _dev):
-        print(f"[device page] RFCOMM connected to {self._bt_device.name}")
         GLib.timeout_add(800, self._query_volume)
 
     def _on_rfcomm_disconnected(self, _dev):
-        print(f"[device page] RFCOMM disconnected from {self._bt_device.name}")
+        pass
 
     def _query_volume(self):
         def _run():

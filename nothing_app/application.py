@@ -37,8 +37,6 @@ def _css_path() -> str:
         ref = importlib.resources.files("nothing_app.data").joinpath("style.css")
         return str(ref)
     except Exception:
-        import os
-
         return os.path.join(os.path.dirname(__file__), "data", "style.css")
 
 
@@ -222,13 +220,17 @@ def _run_cli(argv: list[str]) -> int:
 
 
 def _print_help():
+    from . import __version__
+
     print(
-        "Usage:\n"
+        f"Something X {__version__}\n"
+        "\nUsage:\n"
         "  something-x                             launch GUI\n"
         "  something-x --battery                   print battery levels\n"
         "  something-x --anc off|on|transparency   set ANC mode\n"
         "  something-x --eq balanced|bass|treble|voice  set EQ preset\n"
         "  something-x --device AA:BB:CC:DD:EE:FF  target specific device\n"
+        "  something-x --version                   print version and exit\n"
     )
 
 
@@ -238,6 +240,12 @@ def main():
 
     if "--help" in argv or "-h" in argv:
         _print_help()
+        sys.exit(0)
+
+    if "--version" in argv or "-V" in argv:
+        from . import __version__
+
+        print(f"something-x {__version__}")
         sys.exit(0)
 
     if any(f in argv for f in cli_flags):

@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: write
-  id-token: write  # for PyPI OIDC trusted publishing
+  id-token: write
 
 jobs:
   release-dev:
@@ -18,62 +18,69 @@ jobs:
         with:
           fetch-depth: 0
 
-      # ── Compute dev version ─────────────────────────────────────────────
+      # ── Compute next version with python-semantic-release ───────────────
+      # PSR reads ALL commits since the last vX.Y.Z tag and applies the
+      # highest bump type (feat beats fix, breaking beats all).
+      # We strip PSR's own prerelease counter and use github.run_number instead.
       - name: Compute dev version
         id: version
         run: |
-          CURRENT=$(python3 -c "
-          import re, sys
-          m = re.search(r'version\s*=\s*\"([^\"]+)\"', open('pyproject.toml').read())
-          print(m.group(1) if m else sys.exit(1))
-          ")
-          DEV_VERSION="${CURRENT}.dev${{ github.run_number }}"
+          pip install python-semantic-release
           SHORT_SHA=$(git rev-parse --short HEAD)
 
-          echo "current=$CURRENT"         >> $GITHUB_OUTPUT
+          # --print: compute next version with no side effects
+          # On develop (prerelease=true in pyproject.toml) PSR outputs e.g. "1.8.0.dev1"
+          NEXT_PRE=$(semantic-release version --print 2>/dev/null || echo "")
+
+          if [ -n "$NEXT_PRE" ]; then
+            # Strip PSR's counter (.dev1 / -dev.1) — we use run_number instead
+            NEXT_BASE=$(echo "$NEXT_PRE" | sed -E 's/[.-]dev[.-]?[0-9]*//')
+            DEV_VERSION="${NEXT_BASE}.dev${{ github.run_number }}"
+          else
+            # No user-facing commits — still build, bump patch as fallback
+            LAST=$(git describe --tags --abbrev=0 --match "v[0-9]*.[0-9]*.[0-9]*" 2>/dev/null | sed 's/^v//' || echo "0.0.0")
+            MAJOR=$(echo $LAST | cut -d. -f1)
+            MINOR=$(echo $LAST | cut -d. -f2)
+            PATCH=$(echo $LAST | cut -d. -f3)
+            DEV_VERSION="${MAJOR}.${MINOR}.$((PATCH+1)).dev${{ github.run_number }}"
+          fi
+
+          echo "Dev version: $DEV_VERSION  (sha: $SHORT_SHA)"
           echo "dev_version=$DEV_VERSION" >> $GITHUB_OUTPUT
           echo "short_sha=$SHORT_SHA"     >> $GITHUB_OUTPUT
-          echo "Dev version: $DEV_VERSION (sha: $SHORT_SHA)"
 
-      # ── Patch pyproject.toml for dev build ──────────────────────────────
-      - name: Patch pyproject.toml
+      # ── Patch package name for dev channel ─────────────────────────────
+      - name: Patch package name
         run: |
           sed -i 's/^name\s*=\s*"something-x"/name            = "something-x-dev"/' pyproject.toml
-          sed -i "s/^version = \"${{ steps.version.outputs.current }}\"/version = \"${{ steps.version.outputs.dev_version }}\"/" pyproject.toml
           sed -i 's/^something-x = /something-x-dev = /' pyproject.toml
-          grep -E "^name|^version|something-x" pyproject.toml
 
-      # ── Build wheel + sdist ─────────────────────────────────────────────
+      # ── Build ───────────────────────────────────────────────────────────
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Build distribution
+        env:
+          SETUPTOOLS_SCM_PRETEND_VERSION: ${{ steps.version.outputs.dev_version }}
         run: |
           pip install build
           python -m build
           ls dist/
 
-      # ── Generate changelog with git-cliff ──────────────────────────────
-      - name: Install git-cliff
-        run: pip install git-cliff
-
+      # ── Release notes ───────────────────────────────────────────────────
       - name: Generate pre-release notes
         run: |
-          # --unreleased: all conventional commits since the last vX.Y.Z tag
-          # cliff.toml: skips merge commits, ignores dev-* tags
+          pip install git-cliff
           git cliff --unreleased --strip all 2>/dev/null > /tmp/cliff_body.md
-          if [ ! -s /tmp/cliff_body.md ]; then
-            echo "No user-facing changes since last release." > /tmp/cliff_body.md
-          fi
+          [ -s /tmp/cliff_body.md ] || echo "No user-facing changes since last release." > /tmp/cliff_body.md
 
           cat > /tmp/release_notes.md <<HEADER
           ## something-x-dev ${{ steps.version.outputs.dev_version }}
 
           > Pre-release build from \`develop\` — not for production use.
-
-          **Commit**: \`${{ steps.version.outputs.short_sha }}\`
+          > **Commit**: \`${{ steps.version.outputs.short_sha }}\`
 
           ### Changes since last stable release
 
@@ -82,12 +89,8 @@ jobs:
           cat >> /tmp/release_notes.md <<'FOOTER'
 
           ### Install
-
           ```bash
           pip install something-x-dev==${{ steps.version.outputs.dev_version }}
-
-          # Or download the wheel below
-          pip install something_x_dev-${{ steps.version.outputs.dev_version }}-py3-none-any.whl
           ```
           FOOTER
 
@@ -100,6 +103,6 @@ jobs:
           body_path: /tmp/release_notes.md
           files: dist/*
 
-      # ── Publish to PyPI (OIDC — requires trusted publisher configured) ──
+      # ── Publish to PyPI ─────────────────────────────────────────────────
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

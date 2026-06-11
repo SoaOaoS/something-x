@@ -1,6 +1,4 @@
-import dbus
-import dbus.mainloop.glib
-from gi.repository import GLib, GObject
+from gi.repository import Gio, GLib, GObject
 
 BLUEZ_SERVICE = "org.bluez"
 ADAPTER_IFACE = "org.bluez.Adapter1"
@@ -19,6 +17,10 @@ NOTHING_PATTERNS = (
     "cmf earphone",
     "nothing phone",
 )
+
+# Lightweight proxy flags: no property caching, no auto-signal wiring.
+# Used for proxies that only need to call methods.
+_FLAGS_METHOD = Gio.DBusProxyFlags.DO_NOT_LOAD_PROPERTIES | Gio.DBusProxyFlags.DO_NOT_CONNECT_SIGNALS
 
 
 class BluetoothDevice:
@@ -88,96 +90,136 @@ class BluetoothManager(GObject.Object):
     def __init__(self):
         super().__init__()
         self.devices: dict[str, BluetoothDevice] = {}
-        self._bus: dbus.SystemBus | None = None
+        self._connection: Gio.DBusConnection | None = None
+        self._adapter_path: str | None = None
+        self._subs: list[int] = []
         self._available = False
         self._init_dbus()
 
     def _init_dbus(self):
         try:
-            dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-            self._bus = dbus.SystemBus()
-            self._refresh()
+            self._connection = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+            mgr = Gio.DBusProxy.new_sync(
+                self._connection,
+                _FLAGS_METHOD,
+                None,
+                BLUEZ_SERVICE,
+                "/",
+                OBJ_MANAGER_IFACE,
+                None,
+            )
+            # Non-blocking: populates devices and emits devices-changed when ready
+            mgr.call(
+                "GetManagedObjects",
+                None,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None,
+                self._on_managed_objects,
+                None,
+            )
             self._subscribe()
-            self._available = True
         except Exception as exc:
             print(f"[bluetooth] D-Bus init failed: {exc}")
 
-    def _refresh(self):
-        if not self._bus:
-            return
+    def _on_managed_objects(self, proxy, result, _user_data):
         try:
-            mgr = dbus.Interface(
-                self._bus.get_object(BLUEZ_SERVICE, "/"),
-                OBJ_MANAGER_IFACE,
-            )
-            objects = mgr.GetManagedObjects()
-            self.devices = {}
-            for path, ifaces in objects.items():
-                if DEVICE_IFACE not in ifaces:
-                    continue
-                props = {str(k): v for k, v in ifaces[DEVICE_IFACE].items()}
-                dev = BluetoothDevice(str(path), props)
-                if BATTERY_IFACE in ifaces:
-                    dev.battery = int(ifaces[BATTERY_IFACE].get("Percentage", 0))
-                self.devices[str(path)] = dev
+            variant = proxy.call_finish(result)
+            objects = variant.unpack()[0]
+            self._populate(objects)
+            self._available = True
+            GLib.idle_add(self.emit, "devices-changed")
         except Exception as exc:
-            print(f"[bluetooth] Refresh failed: {exc}")
+            print(f"[bluetooth] GetManagedObjects failed: {exc}")
+
+    def _populate(self, objects: dict):
+        self.devices = {}
+        self._adapter_path = None
+        for path, ifaces in objects.items():
+            if ADAPTER_IFACE in ifaces and self._adapter_path is None:
+                self._adapter_path = path
+            if DEVICE_IFACE not in ifaces:
+                continue
+            props = dict(ifaces[DEVICE_IFACE])
+            dev = BluetoothDevice(path, props)
+            if BATTERY_IFACE in ifaces:
+                dev.battery = int(ifaces[BATTERY_IFACE].get("Percentage", 0))
+            self.devices[path] = dev
 
     def _subscribe(self):
-        if not self._bus:
+        if not self._connection:
             return
         try:
-            self._bus.add_signal_receiver(
-                self._on_props_changed,
-                signal_name="PropertiesChanged",
-                dbus_interface=PROPERTIES_IFACE,
-                path_keyword="path",
+            self._subs.append(
+                self._connection.signal_subscribe(
+                    BLUEZ_SERVICE,
+                    PROPERTIES_IFACE,
+                    "PropertiesChanged",
+                    None,
+                    None,
+                    Gio.DBusSignalFlags.NONE,
+                    self._on_props_changed,
+                    None,
+                )
             )
-            self._bus.add_signal_receiver(
-                self._on_ifaces_added,
-                signal_name="InterfacesAdded",
-                dbus_interface=OBJ_MANAGER_IFACE,
-                bus_name=BLUEZ_SERVICE,
+            self._subs.append(
+                self._connection.signal_subscribe(
+                    BLUEZ_SERVICE,
+                    OBJ_MANAGER_IFACE,
+                    "InterfacesAdded",
+                    None,
+                    None,
+                    Gio.DBusSignalFlags.NONE,
+                    self._on_ifaces_added,
+                    None,
+                )
             )
-            self._bus.add_signal_receiver(
-                self._on_ifaces_removed,
-                signal_name="InterfacesRemoved",
-                dbus_interface=OBJ_MANAGER_IFACE,
-                bus_name=BLUEZ_SERVICE,
+            self._subs.append(
+                self._connection.signal_subscribe(
+                    BLUEZ_SERVICE,
+                    OBJ_MANAGER_IFACE,
+                    "InterfacesRemoved",
+                    None,
+                    None,
+                    Gio.DBusSignalFlags.NONE,
+                    self._on_ifaces_removed,
+                    None,
+                )
             )
         except Exception as exc:
             print(f"[bluetooth] Signal subscribe failed: {exc}")
 
-    def _on_props_changed(self, interface, changed, _invalidated=None, path=None):
-        if interface != DEVICE_IFACE:
+    def _on_props_changed(self, _conn, _sender, path, _iface, _signal, params, _user_data):
+        iface_name, changed, _invalidated = params.unpack()
+        if iface_name != DEVICE_IFACE:
             return
-        if not path:
-            return
-        path = str(path)
         if path not in self.devices:
             return
         dev = self.devices[path]
         old_connected = dev.connected
-        dev.update({str(k): v for k, v in changed.items()})
+        dev.update(dict(changed))
         if dev.connected != old_connected:
             sig = "device-connected" if dev.connected else "device-disconnected"
             GLib.idle_add(self.emit, sig, path)
         GLib.idle_add(self.emit, "devices-changed")
 
-    def _on_ifaces_added(self, path, ifaces):
+    def _on_ifaces_added(self, _conn, _sender, _path, _iface, _signal, params, _user_data):
+        obj_path, ifaces = params.unpack()
+        if ADAPTER_IFACE in ifaces and self._adapter_path is None:
+            self._adapter_path = obj_path
         if DEVICE_IFACE not in ifaces:
             return
-        props = {str(k): v for k, v in ifaces[DEVICE_IFACE].items()}
-        dev = BluetoothDevice(str(path), props)
+        props = dict(ifaces[DEVICE_IFACE])
+        dev = BluetoothDevice(obj_path, props)
         if BATTERY_IFACE in ifaces:
             dev.battery = int(ifaces[BATTERY_IFACE].get("Percentage", 0))
-        self.devices[str(path)] = dev
+        self.devices[obj_path] = dev
         GLib.idle_add(self.emit, "devices-changed")
 
-    def _on_ifaces_removed(self, path, ifaces):
-        path = str(path)
-        if DEVICE_IFACE in ifaces and path in self.devices:
-            del self.devices[path]
+    def _on_ifaces_removed(self, _conn, _sender, _path, _iface, _signal, params, _user_data):
+        obj_path, ifaces = params.unpack()
+        if DEVICE_IFACE in ifaces and obj_path in self.devices:
+            del self.devices[obj_path]
             GLib.idle_add(self.emit, "devices-changed")
 
     @property
@@ -191,56 +233,152 @@ class BluetoothManager(GObject.Object):
         return [d for d in self.get_all() if d.is_nothing]
 
     def refresh(self):
-        self._refresh()
-        self.emit("devices-changed")
+        if not self._connection:
+            return
+        try:
+            mgr = Gio.DBusProxy.new_sync(
+                self._connection,
+                _FLAGS_METHOD,
+                None,
+                BLUEZ_SERVICE,
+                "/",
+                OBJ_MANAGER_IFACE,
+                None,
+            )
+            mgr.call(
+                "GetManagedObjects",
+                None,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None,
+                self._on_managed_objects,
+                None,
+            )
+        except Exception as exc:
+            print(f"[bluetooth] refresh: {exc}")
 
     def connect_device(self, path: str, on_error=None):
-        if not self._bus:
+        if not self._connection:
             return
+        Gio.DBusProxy.new(
+            self._connection,
+            _FLAGS_METHOD,
+            None,
+            BLUEZ_SERVICE,
+            path,
+            DEVICE_IFACE,
+            None,
+            self._on_connect_proxy_ready,
+            on_error,
+        )
 
-        def _err(e):
-            print(f"[BT] connect error: {e}")
+    def _on_connect_proxy_ready(self, _source, result, on_error):
+        try:
+            proxy = Gio.DBusProxy.new_finish(result)
+            proxy.call(
+                "Connect",
+                None,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None,
+                self._on_connect_done,
+                on_error,
+            )
+        except Exception as exc:
+            print(f"[bluetooth] connect proxy failed: {exc}")
             if on_error:
                 GLib.idle_add(on_error)
 
+    def _on_connect_done(self, proxy, result, on_error):
         try:
-            iface = dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, path), DEVICE_IFACE)
-            iface.Connect(reply_handler=lambda: None, error_handler=_err)
+            proxy.call_finish(result)
         except Exception as exc:
-            print(f"[bluetooth] connect {path}: {exc}")
+            print(f"[BT] connect error: {exc}")
             if on_error:
                 GLib.idle_add(on_error)
 
     def disconnect_device(self, path: str):
-        if not self._bus:
+        if not self._connection:
             return
+        Gio.DBusProxy.new(
+            self._connection,
+            _FLAGS_METHOD,
+            None,
+            BLUEZ_SERVICE,
+            path,
+            DEVICE_IFACE,
+            None,
+            self._on_disconnect_proxy_ready,
+            None,
+        )
+
+    def _on_disconnect_proxy_ready(self, _source, result, _user_data):
         try:
-            iface = dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, path), DEVICE_IFACE)
-            iface.Disconnect(
-                reply_handler=lambda: None,
-                error_handler=lambda e: print(f"[BT] disconnect error: {e}"),
+            proxy = Gio.DBusProxy.new_finish(result)
+            proxy.call(
+                "Disconnect",
+                None,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None,
+                self._on_disconnect_done,
+                None,
             )
         except Exception as exc:
-            print(f"[bluetooth] disconnect {path}: {exc}")
+            print(f"[bluetooth] disconnect proxy failed: {exc}")
+
+    def _on_disconnect_done(self, proxy, result, _user_data):
+        try:
+            proxy.call_finish(result)
+        except Exception as exc:
+            print(f"[BT] disconnect error: {exc}")
 
     def start_discovery(self):
-        if not self._bus:
+        if not self._connection or not self._adapter_path:
             return
         try:
-            mgr = dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, "/"), OBJ_MANAGER_IFACE)
-            for path, ifaces in mgr.GetManagedObjects().items():
-                if ADAPTER_IFACE in ifaces:
-                    adapter = dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, path), ADAPTER_IFACE)
-                    adapter.StartDiscovery()
-                    GLib.timeout_add_seconds(30, self._stop_discovery_on_path, str(path))
-                    break
+            proxy = Gio.DBusProxy.new_sync(
+                self._connection,
+                _FLAGS_METHOD,
+                None,
+                BLUEZ_SERVICE,
+                self._adapter_path,
+                ADAPTER_IFACE,
+                None,
+            )
+            proxy.call(
+                "StartDiscovery",
+                None,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None,
+                self._on_start_discovery_done,
+                None,
+            )
         except Exception as exc:
             print(f"[bluetooth] discovery start: {exc}")
 
-    def _stop_discovery_on_path(self, path: str):
+    def _on_start_discovery_done(self, proxy, result, _user_data):
         try:
-            adapter = dbus.Interface(self._bus.get_object(BLUEZ_SERVICE, path), ADAPTER_IFACE)
-            adapter.StopDiscovery()
+            proxy.call_finish(result)
+            GLib.timeout_add_seconds(30, self._stop_discovery)
+        except Exception as exc:
+            print(f"[bluetooth] start discovery error: {exc}")
+
+    def _stop_discovery(self):
+        if not self._connection or not self._adapter_path:
+            return False
+        try:
+            proxy = Gio.DBusProxy.new_sync(
+                self._connection,
+                _FLAGS_METHOD,
+                None,
+                BLUEZ_SERVICE,
+                self._adapter_path,
+                ADAPTER_IFACE,
+                None,
+            )
+            proxy.call_sync("StopDiscovery", None, Gio.DBusCallFlags.NONE, -1, None)
         except Exception:
             pass
         return False

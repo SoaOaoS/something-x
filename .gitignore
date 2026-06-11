@@ -37,6 +37,9 @@ ENV/
 .DS_Store
 Thumbs.db
 
+# setuptools-scm generated version file (written at install/build time)
+nothing_app/_version.py
+
 # APK reverse-engineering artifacts (local research only)
 *apkm*
 apkm_decompiled/

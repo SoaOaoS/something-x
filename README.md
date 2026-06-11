@@ -9,6 +9,8 @@ Built for [Omarchy](https://omarchy.org) · GTK4 · Pure black · JetBrains Mono
 [![AUR](https://img.shields.io/aur/version/something-x?color=red)](https://aur.archlinux.org/packages/something-x)
 [![License: MIT](https://img.shields.io/badge/license-MIT-red.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux-lightgrey)](https://github.com/SoaOaoS/something-x)
+[![CI](https://github.com/SoaOaoS/something-x/actions/workflows/ci.yml/badge.svg)](https://github.com/SoaOaoS/something-x/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-tracked-red)](https://github.com/SoaOaoS/something-x/actions/workflows/ci.yml)
 
 </div>
 

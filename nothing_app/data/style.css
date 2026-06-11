@@ -1,12 +1,12 @@
 @define-color window_bg_color #000000;
 @define-color window_fg_color #ffffff;
-@define-color view_bg_color #000000;
+@define-color view_bg_color #030308;
 @define-color view_fg_color #ffffff;
-@define-color headerbar_bg_color #000000;
+@define-color headerbar_bg_color #080812;
 @define-color headerbar_fg_color #ffffff;
-@define-color headerbar_border_color rgba(255,255,255,0.07);
-@define-color headerbar_backdrop_color #000000;
-@define-color card_bg_color rgba(255,255,255,0.04);
+@define-color headerbar_border_color rgba(255,255,255,0.09);
+@define-color headerbar_backdrop_color #030308;
+@define-color card_bg_color rgba(255,255,255,0.045);
 @define-color card_fg_color #ffffff;
 @define-color accent_bg_color #e83535;
 @define-color accent_fg_color #ffffff;
@@ -15,6 +15,47 @@
 @define-color destructive_fg_color #ffffff;
 @define-color success_bg_color #8fdf72;
 @define-color success_fg_color #0a0a0a;
+
+/* ── Keyframe Animations ─────────────────────────────────────────────────── */
+
+@keyframes dot-pulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(232, 53, 53, 0.62); }
+    50%       { box-shadow: 0 0 14px rgba(232, 53, 53, 0.92), 0 0 28px rgba(232, 53, 53, 0.20); }
+}
+
+@keyframes card-enter {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes fade-up {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes badge-breathe {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.68; }
+}
+
+@keyframes scan-bloom {
+    0%, 100% {
+        box-shadow:
+            0 0 0 1px rgba(232, 53, 53, 0.12),
+            0 4px 24px rgba(232, 53, 53, 0.38),
+            0 12px 48px rgba(232, 53, 53, 0.15),
+            inset 0 1px 0 rgba(255, 148, 148, 0.24),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.38);
+    }
+    50% {
+        box-shadow:
+            0 0 0 1px rgba(232, 53, 53, 0.22),
+            0 4px 34px rgba(232, 53, 53, 0.54),
+            0 12px 68px rgba(232, 53, 53, 0.24),
+            inset 0 1px 0 rgba(255, 148, 148, 0.30),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.38);
+    }
+}
 
 /* ── Splash ──────────────────────────────────────────────────────────────── */
 
@@ -33,7 +74,7 @@ window,
 
 scrolledwindow,
 viewport {
-    background-color: #000000;
+    background-color: #030308;
 }
 
 scrollbar trough {
@@ -46,18 +87,24 @@ scrollbar slider {
     border-radius: 3px;
     min-width: 3px;
     min-height: 48px;
+    transition: background 160ms ease, box-shadow 160ms ease;
 }
-scrollbar slider:hover { background-color: rgba(255, 255, 255, 0.18); }
+scrollbar slider:hover {
+    background-color: rgba(255, 255, 255, 0.17);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.07);
+}
 
 /* ── Header ──────────────────────────────────────────────────────────────── */
 
 headerbar,
 .nothing-header {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, #000000 100%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.068) 0%, rgba(255, 255, 255, 0.015) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
     color: #ffffff;
     min-height: 56px;
-    box-shadow: none;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 8px 36px rgba(0, 0, 0, 0.52);
     padding: 0 10px;
 }
 
@@ -75,7 +122,7 @@ headerbar button.flat:not(.close):not(.minimize):not(.maximize) {
     background: none;
     border: none;
     box-shadow: none;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.40);
     border-radius: 10px;
     min-width: 36px;
     min-height: 36px;
@@ -94,7 +141,7 @@ headerbar button:not(.close):not(.minimize):not(.maximize):active {
 /* ── Page ────────────────────────────────────────────────────────────────── */
 
 .nothing-page {
-    background-color: #000000;
+    background: linear-gradient(180deg, #090205 0%, #030308 18%);
     padding: 0 18px 40px;
 }
 
@@ -106,7 +153,7 @@ headerbar button:not(.close):not(.minimize):not(.maximize):active {
     font-weight: 700;
     letter-spacing: 4px;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.30);
     padding: 0 2px;
     margin-top: 36px;
     margin-bottom: 14px;
@@ -127,20 +174,27 @@ headerbar button:not(.close):not(.minimize):not(.maximize):active {
 /* ── Device list cards ───────────────────────────────────────────────────── */
 
 .device-card {
-    background: rgba(255, 255, 255, 0.04);
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.022) 100%);
     border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.10);
     padding: 22px;
     margin-bottom: 8px;
-    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.6),
-                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    box-shadow:
+        0 6px 32px rgba(0, 0, 0, 0.72),
+        0 0 0 0.5px rgba(255, 255, 255, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.11),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.32);
     transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+    animation: card-enter 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .device-card:hover {
-    background: rgba(255, 255, 255, 0.07);
-    border-color: rgba(255, 255, 255, 0.13);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7),
-                inset 0 1px 0 rgba(255, 255, 255, 0.09);
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.082) 0%, rgba(255, 255, 255, 0.036) 100%);
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow:
+        0 10px 44px rgba(0, 0, 0, 0.82),
+        0 0 0 0.5px rgba(255, 255, 255, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.32);
 }
 
 .device-card-name {
@@ -153,9 +207,10 @@ headerbar button:not(.close):not(.minimize):not(.maximize):active {
 .device-card-address {
     font-family: "JetBrains Mono", monospace;
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.20);
     letter-spacing: 1.5px;
     margin-top: 4px;
+    font-variant-numeric: tabular-nums;
 }
 
 .status-connected {
@@ -179,29 +234,40 @@ headerbar button:not(.close):not(.minimize):not(.maximize):active {
     letter-spacing: 2.5px;
     text-transform: uppercase;
     color: #e83535;
-    background: rgba(232, 53, 53, 0.1);
+    background: rgba(232, 53, 53, 0.10);
     border: 1px solid rgba(232, 53, 53, 0.22);
     border-radius: 6px;
     padding: 3px 9px;
+    animation: badge-breathe 3.6s ease-in-out infinite;
 }
 
 /* ── Battery progress ────────────────────────────────────────────────────── */
 
 progressbar,
 progressbar trough {
-    background-color: rgba(255, 255, 255, 0.07);
-    border-radius: 4px;
-    min-height: 4px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.052) 0%, rgba(255, 255, 255, 0.030) 100%);
+    border-radius: 6px;
+    min-height: 5px;
     border: none;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.55);
 }
 progressbar progress {
     background-color: #e83535;
-    border-radius: 4px;
-    min-height: 4px;
+    border-radius: 6px;
+    min-height: 5px;
 }
-progressbar.battery-high progress { background-color: #8fdf72; }
-progressbar.battery-mid  progress { background-color: #f0c040; }
-progressbar.battery-low  progress { background-color: #e85252; }
+progressbar.battery-high progress {
+    background: linear-gradient(90deg, #6bc454 0%, #8fdf72 100%);
+    box-shadow: 0 0 8px rgba(143, 223, 114, 0.32);
+}
+progressbar.battery-mid progress {
+    background: linear-gradient(90deg, #d4a820 0%, #f0c040 100%);
+    box-shadow: 0 0 8px rgba(240, 192, 64, 0.32);
+}
+progressbar.battery-low progress {
+    background: linear-gradient(90deg, #c83030 0%, #e85252 100%);
+    box-shadow: 0 0 8px rgba(232, 82, 82, 0.35);
+}
 
 .battery-pct {
     font-family: "JetBrains Mono", monospace;
@@ -209,6 +275,7 @@ progressbar.battery-low  progress { background-color: #e85252; }
     font-weight: 700;
     color: #ffffff;
     min-width: 38px;
+    font-variant-numeric: tabular-nums;
 }
 .battery-label-small {
     font-family: "JetBrains Mono", monospace;
@@ -223,6 +290,7 @@ progressbar.battery-low  progress { background-color: #e85252; }
     font-weight: 700;
     color: #ffffff;
     letter-spacing: -2px;
+    font-variant-numeric: tabular-nums;
 }
 .battery-unit {
     font-family: "JetBrains Mono", monospace;
@@ -234,12 +302,14 @@ progressbar.battery-low  progress { background-color: #e85252; }
 /* ── Sound mode — segmented control ─────────────────────────────────────── */
 
 .anc-container {
-    background: rgba(255, 255, 255, 0.035);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.040) 0%, rgba(255, 255, 255, 0.014) 100%);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     padding: 4px;
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6),
-                inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    box-shadow:
+        inset 0 2px 8px rgba(0, 0, 0, 0.62),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04),
+        0 4px 20px rgba(0, 0, 0, 0.42);
 }
 
 .anc-button {
@@ -247,12 +317,12 @@ progressbar.battery-low  progress { background-color: #e85252; }
     border: none;
     box-shadow: none;
     border-radius: 16px;
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.30);
     font-family: "JetBrains Mono", monospace;
     font-size: 12px;
     font-weight: 600;
     padding: 11px 14px;
-    transition: all 220ms ease;
+    transition: all 220ms cubic-bezier(0.16, 1, 0.3, 1);
     letter-spacing: 0.2px;
 }
 .anc-button:hover {
@@ -264,8 +334,9 @@ progressbar.battery-low  progress { background-color: #e85252; }
     background: linear-gradient(160deg, #e83535 0%, #c02424 100%);
     color: #ffffff;
     font-weight: 700;
-    box-shadow: 0 2px 20px rgba(232, 53, 53, 0.55),
-                inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    box-shadow:
+        0 2px 16px rgba(232, 53, 53, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.20);
 }
 .anc-button.active label,
 .anc-button:checked label { color: #ffffff; }
@@ -277,22 +348,29 @@ progressbar.battery-low  progress { background-color: #e85252; }
 /* ── EQ preset pills ─────────────────────────────────────────────────────── */
 
 .eq-button {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.052) 0%, rgba(255, 255, 255, 0.022) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+        0 2px 8px rgba(0, 0, 0, 0.42);
     border-radius: 100px;
-    color: rgba(255, 255, 255, 0.38);
+    color: rgba(255, 255, 255, 0.40);
     font-family: "JetBrains Mono", monospace;
     font-size: 12px;
     font-weight: 600;
     padding: 10px 20px;
-    transition: all 220ms ease;
+    transition: all 200ms ease;
     letter-spacing: 0.2px;
 }
 .eq-button:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.13);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.085) 0%, rgba(255, 255, 255, 0.040) 100%);
+    border-color: rgba(255, 255, 255, 0.14);
     color: rgba(255, 255, 255, 0.72);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+        0 4px 14px rgba(0, 0, 0, 0.52);
 }
 .eq-button.active,
 .eq-button:checked {
@@ -300,8 +378,9 @@ progressbar.battery-low  progress { background-color: #e85252; }
     border-color: transparent;
     color: #ffffff;
     font-weight: 700;
-    box-shadow: 0 2px 20px rgba(232, 53, 53, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    box-shadow:
+        0 2px 16px rgba(232, 53, 53, 0.36),
+        inset 0 1px 0 rgba(255, 255, 255, 0.20);
 }
 .eq-button.active label,
 .eq-button:checked label { color: #ffffff; }
@@ -313,27 +392,37 @@ progressbar.battery-low  progress { background-color: #e85252; }
 /* ── Volume slider ───────────────────────────────────────────────────────── */
 
 scale trough {
-    background-color: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.060) 0%, rgba(255, 255, 255, 0.038) 100%);
     border-radius: 8px;
-    min-height: 5px;
+    min-height: 6px;
     border: none;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.62);
 }
 scale trough highlight {
-    background: linear-gradient(90deg, #c42424 0%, #e83535 100%);
+    background: linear-gradient(90deg, #a81e1e 0%, #e83535 65%, #f04040 100%);
     border-radius: 8px;
+    box-shadow: 0 0 10px rgba(232, 53, 53, 0.36);
 }
 scale slider {
-    background-color: #ffffff;
+    background: radial-gradient(circle at 35% 30%, #ffffff 0%, #d2d2d2 100%);
     border-radius: 50%;
     min-width: 22px;
     min-height: 22px;
     border: none;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+    box-shadow:
+        0 2px 12px rgba(0, 0, 0, 0.65),
+        inset 0 1px 0 rgba(255, 255, 255, 0.50);
 }
-scale slider:hover { background-color: #eeeeee; }
+scale slider:hover {
+    background: radial-gradient(circle at 35% 30%, #ffffff 0%, #e0e0e0 100%);
+}
 scale slider:active {
-    background-color: #dddddd;
-    box-shadow: 0 0 0 6px rgba(232, 53, 53, 0.18), 0 2px 10px rgba(0, 0, 0, 0.6);
+    background: radial-gradient(circle at 35% 30%, #ffffff 0%, #d2d2d2 100%);
+    box-shadow:
+        0 0 0 5px rgba(232, 53, 53, 0.15),
+        0 0 0 10px rgba(232, 53, 53, 0.06),
+        0 2px 12px rgba(0, 0, 0, 0.65),
+        inset 0 1px 0 rgba(255, 255, 255, 0.50);
 }
 
 .volume-label {
@@ -342,22 +431,26 @@ scale slider:active {
     font-weight: 700;
     color: rgba(255, 255, 255, 0.45);
     min-width: 42px;
+    font-variant-numeric: tabular-nums;
 }
 
 /* ── Settings group ──────────────────────────────────────────────────────── */
 
 .settings-group {
-    background: rgba(255, 255, 255, 0.03);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.048) 0%, rgba(255, 255, 255, 0.018) 100%);
     border-radius: 22px;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    box-shadow: 0 4px 28px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow:
+        0 4px 28px rgba(0, 0, 0, 0.58),
+        inset 0 1px 0 rgba(255, 255, 255, 0.09),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.26);
 }
 
 .settings-row {
     background-color: transparent;
     padding: 17px 22px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+    transition: background 160ms ease;
 }
 .settings-row:last-child { border-bottom: none; }
 
@@ -373,29 +466,33 @@ scale slider:active {
 }
 
 switch {
-    background-color: rgba(255, 255, 255, 0.10);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.080) 0%, rgba(255, 255, 255, 0.048) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 20px;
     min-width: 50px;
     min-height: 28px;
-    border: none;
-    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
-    transition: background 200ms ease;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.52);
+    transition: background 220ms ease, box-shadow 220ms ease;
 }
 switch:checked {
-    background-color: #e83535;
-    box-shadow: 0 0 14px rgba(232, 53, 53, 0.45);
+    background: linear-gradient(160deg, #e83535 0%, #c02020 100%);
+    border-color: rgba(255, 100, 100, 0.18);
+    box-shadow:
+        0 0 14px rgba(232, 53, 53, 0.32),
+        0 0 36px rgba(232, 53, 53, 0.10),
+        inset 0 2px 6px rgba(0, 0, 0, 0.20);
 }
 switch slider {
-    background-color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.55);
     border-radius: 50%;
     min-width: 22px;
     min-height: 22px;
     margin: 3px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.42);
 }
 switch:checked slider {
     background-color: #ffffff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.50);
 }
 
 /* ── Device info ─────────────────────────────────────────────────────────── */
@@ -413,33 +510,49 @@ switch:checked slider {
     font-weight: 600;
     color: rgba(255, 255, 255, 0.45);
     letter-spacing: 0.3px;
+    font-variant-numeric: tabular-nums;
 }
 
 /* ── Action buttons ──────────────────────────────────────────────────────── */
 
 .scan-button {
-    background: linear-gradient(160deg, #e83535 0%, #c42424 100%);
+    background: linear-gradient(160deg, #e83535 0%, #c02020 100%);
     border-radius: 100px;
     color: #ffffff;
     font-family: "JetBrains Mono", monospace;
     font-weight: 700;
     font-size: 12px;
     padding: 17px 52px;
-    border: none;
-    box-shadow: 0 4px 28px rgba(232, 53, 53, 0.55),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 110, 110, 0.18);
+    box-shadow:
+        0 0 0 1px rgba(232, 53, 53, 0.12),
+        0 4px 24px rgba(232, 53, 53, 0.38),
+        0 12px 48px rgba(232, 53, 53, 0.15),
+        inset 0 1px 0 rgba(255, 148, 148, 0.24),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.38);
     letter-spacing: 2px;
     transition: all 200ms ease;
 }
 .scan-button label { color: #ffffff; }
 .scan-button:hover {
     background: linear-gradient(160deg, #f04040 0%, #cc2c2c 100%);
-    box-shadow: 0 6px 36px rgba(232, 53, 53, 0.65),
-                inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    box-shadow:
+        0 0 0 1px rgba(232, 53, 53, 0.20),
+        0 6px 32px rgba(232, 53, 53, 0.52),
+        0 16px 60px rgba(232, 53, 53, 0.22),
+        inset 0 1px 0 rgba(255, 148, 148, 0.30),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.38);
 }
 .scan-button:active {
     background: linear-gradient(160deg, #c42424 0%, #a81e1e 100%);
-    box-shadow: 0 2px 14px rgba(232, 53, 53, 0.4);
+    box-shadow:
+        0 0 0 1px rgba(232, 53, 53, 0.08),
+        0 2px 12px rgba(232, 53, 53, 0.28),
+        inset 0 1px 0 rgba(255, 148, 148, 0.16),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.42);
+}
+.scan-button.scanning {
+    animation: scan-bloom 1.8s ease-in-out infinite;
 }
 
 .disconnect-button {
@@ -451,39 +564,47 @@ switch:checked slider {
     font-size: 12px;
     padding: 16px 40px;
     border: 1px solid rgba(232, 53, 53, 0.18);
-    box-shadow: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     letter-spacing: 2px;
     transition: all 200ms ease;
 }
 .disconnect-button label { color: rgba(232, 53, 53, 0.75); }
 .disconnect-button:hover {
-    background: rgba(232, 53, 53, 0.13);
-    border-color: rgba(232, 53, 53, 0.32);
+    background: rgba(232, 53, 53, 0.12);
+    border-color: rgba(232, 53, 53, 0.30);
     color: #e83535;
-    box-shadow: 0 0 20px rgba(232, 53, 53, 0.15);
+    box-shadow:
+        0 0 16px rgba(232, 53, 53, 0.11),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 .disconnect-button:hover label { color: #e83535; }
 
 .connect-button {
-    background: rgba(255, 255, 255, 0.04);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.052) 0%, rgba(255, 255, 255, 0.022) 100%);
     border-radius: 100px;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.60);
     font-family: "JetBrains Mono", monospace;
     font-weight: 700;
     font-size: 12px;
     padding: 16px 40px;
     border: 1px solid rgba(255, 255, 255, 0.11);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.26);
     letter-spacing: 2px;
     transition: all 200ms ease;
 }
-.connect-button label { color: rgba(255, 255, 255, 0.6); }
+.connect-button label { color: rgba(255, 255, 255, 0.60); }
 .connect-button:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.085) 0%, rgba(255, 255, 255, 0.040) 100%);
     border-color: rgba(255, 255, 255, 0.18);
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.90);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.26),
+        0 4px 16px rgba(0, 0, 0, 0.42);
 }
-.connect-button:hover label { color: rgba(255, 255, 255, 0.9); }
+.connect-button:hover label { color: rgba(255, 255, 255, 0.90); }
 
 .connecting-button {
     background: rgba(255, 255, 255, 0.03);
@@ -515,11 +636,13 @@ switch:checked slider {
     letter-spacing: 4px;
     text-transform: uppercase;
     color: rgba(255, 255, 255, 0.10);
+    animation: fade-up 380ms ease both;
 }
 .empty-subtitle {
     font-size: 13px;
     color: rgba(255, 255, 255, 0.18);
     margin-top: 8px;
+    animation: fade-up 380ms 80ms ease both;
 }
 
 /* ── Nothing brand ───────────────────────────────────────────────────────── */
@@ -529,7 +652,8 @@ switch:checked slider {
     border-radius: 50%;
     min-width: 6px;
     min-height: 6px;
-    box-shadow: 0 0 8px rgba(232, 53, 53, 0.7);
+    box-shadow: 0 0 6px rgba(232, 53, 53, 0.62);
+    animation: dot-pulse 3s ease-in-out infinite;
 }
 
 separator { background-color: rgba(255, 255, 255, 0.05); }
