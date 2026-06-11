@@ -53,6 +53,27 @@ version_scheme        = "guess-next-dev"
 local_scheme          = "no-local-version"
 version_file          = "nothing_app/_version.py"
 
+[tool.semantic_release]
+# Version is tag-only — PSR reads from the last vX.Y.Z tag and writes a new tag.
+# No version_toml / version_variables → no file modifications.
+tag_format             = "v{version}"
+commit_version_number  = false
+commit_message         = ""
+
+[tool.semantic_release.branches.main]
+match      = "main"
+prerelease = false
+
+[tool.semantic_release.branches.develop]
+match             = "develop"
+prerelease        = true
+prerelease_token  = "dev"
+
+[tool.semantic_release.commit_parser_options]
+major_tags  = ["BREAKING CHANGE"]
+minor_tags  = ["feat"]
+patch_tags  = ["fix", "perf", "refactor"]
+
 [tool.ruff]
 line-length = 110
 

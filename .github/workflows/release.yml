@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: write
-  id-token: write  # for PyPI OIDC trusted publishing
+  id-token: write
 
 jobs:
   release:
@@ -19,47 +19,24 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.RELEASE_PAT }}
 
-      # ── Determine version bump from conventional commit ─────────────────
-      - name: Parse commit and bump version
+      # ── Compute stable version with python-semantic-release ─────────────
+      # PSR reads ALL commits since last vX.Y.Z tag, highest bump wins.
+      # docs/chore/ci/test commits produce no output → release skipped.
+      - name: Compute release version
         id: version
         run: |
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          echo "Commit: $COMMIT_MSG"
-
-          # Read current version from last vX.Y.Z tag (not pyproject.toml)
-          CURRENT=$(git describe --tags --abbrev=0 --match "v[0-9]*.[0-9]*.[0-9]*" 2>/dev/null | sed 's/^v//')
-          if [ -z "$CURRENT" ]; then
-            CURRENT="0.0.0"
-          fi
-          echo "Current version (last tag): $CURRENT"
-
-          MAJOR=$(echo $CURRENT | cut -d. -f1)
-          MINOR=$(echo $CURRENT | cut -d. -f2)
-          PATCH=$(echo $CURRENT | cut -d. -f3)
-
-          if echo "$COMMIT_MSG" | grep -qE "(^(feat|fix|refactor|perf)!:)|(BREAKING CHANGE:)"; then
-            BUMP=major
-            MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
-          elif echo "$COMMIT_MSG" | grep -qE "^feat(\([^)]+\))?:"; then
-            BUMP=minor
-            MINOR=$((MINOR + 1)); PATCH=0
-          elif echo "$COMMIT_MSG" | grep -qE "^(fix|perf|refactor)(\([^)]+\))?:"; then
-            BUMP=patch
-            PATCH=$((PATCH + 1))
-          else
-            echo "Commit type does not trigger a release (docs/chore/style/ci/test). Skipping."
+          pip install python-semantic-release
+          NEW=$(semantic-release version --print 2>/dev/null || echo "")
+          if [ -z "$NEW" ]; then
+            echo "No releasable commits (docs/chore/style/ci/test only). Skipping."
             echo "skip=true" >> $GITHUB_OUTPUT
             exit 0
           fi
+          echo "New version: $NEW"
+          echo "new=$NEW"    >> $GITHUB_OUTPUT
+          echo "skip=false"  >> $GITHUB_OUTPUT
 
-          NEW="$MAJOR.$MINOR.$PATCH"
-          echo "Bump: $BUMP  →  $CURRENT → $NEW"
-          echo "current=$CURRENT" >> $GITHUB_OUTPUT
-          echo "new=$NEW"         >> $GITHUB_OUTPUT
-          echo "bump=$BUMP"       >> $GITHUB_OUTPUT
-          echo "skip=false"       >> $GITHUB_OUTPUT
-
-      # ── Tag and push (no pyproject.toml commit needed) ──────────────────
+      # ── Tag and push ────────────────────────────────────────────────────
       - name: Create and push release tag
         if: steps.version.outputs.skip != 'true'
         run: |
@@ -68,45 +45,7 @@ jobs:
           git tag "v${{ steps.version.outputs.new }}"
           git push origin "v${{ steps.version.outputs.new }}"
 
-      # ── Generate changelog with git-cliff ──────────────────────────────
-      - name: Install git-cliff
-        if: steps.version.outputs.skip != 'true'
-        run: pip install git-cliff
-
-      - name: Generate release notes
-        if: steps.version.outputs.skip != 'true'
-        run: |
-          # --latest: commits from the previous vX.Y.Z tag up to the tag we just pushed
-          # cliff.toml: skips merge commits, ignores dev-* tags, filters to conventional commits
-          git cliff --latest --strip all 2>/dev/null > /tmp/cliff_body.md
-          if [ ! -s /tmp/cliff_body.md ]; then
-            echo "No user-facing changes in this release." > /tmp/cliff_body.md
-          fi
-
-          # Prepend the header + install block; cliff body goes in the middle
-          cat > /tmp/release_notes.md <<HEADER
-          ## Something X v${{ steps.version.outputs.new }}
-
-          HEADER
-          cat /tmp/cliff_body.md >> /tmp/release_notes.md
-          cat >> /tmp/release_notes.md <<'FOOTER'
-
-          ### Install
-
-          ```bash
-          # Arch / Omarchy (recommended)
-          sudo pacman -S python-gobject python-dbus python-cairo gtk4 libadwaita
-          pip install something-x==${{ steps.version.outputs.new }}
-
-          # Or download the wheel below
-          pip install something_x-${{ steps.version.outputs.new }}-py3-none-any.whl
-          ```
-          FOOTER
-
-          echo "--- Release notes preview ---"
-          cat /tmp/release_notes.md
-
-      # ── Build wheel + sdist ─────────────────────────────────────────────
+      # ── Build ───────────────────────────────────────────────────────────
       - name: Set up Python
         if: steps.version.outputs.skip != 'true'
         uses: actions/setup-python@v5
@@ -115,23 +54,20 @@ jobs:
 
       - name: Build distribution
         if: steps.version.outputs.skip != 'true'
+        env:
+          SETUPTOOLS_SCM_PRETEND_VERSION: ${{ steps.version.outputs.new }}
         run: |
           pip install build
           python -m build
           ls dist/
 
-      # ── Generate changelog with git-cliff ──────────────────────────────
-      - name: Install git-cliff
-        if: steps.version.outputs.skip != 'true'
-        run: pip install git-cliff
-
+      # ── Release notes ───────────────────────────────────────────────────
       - name: Generate release notes
         if: steps.version.outputs.skip != 'true'
         run: |
+          pip install git-cliff
           git cliff --latest --strip all 2>/dev/null > /tmp/cliff_body.md
-          if [ ! -s /tmp/cliff_body.md ]; then
-            echo "No user-facing changes in this release." > /tmp/cliff_body.md
-          fi
+          [ -s /tmp/cliff_body.md ] || echo "No user-facing changes in this release." > /tmp/cliff_body.md
 
           cat > /tmp/release_notes.md <<HEADER
           ## Something X v${{ steps.version.outputs.new }}
@@ -141,14 +77,10 @@ jobs:
           cat >> /tmp/release_notes.md <<'FOOTER'
 
           ### Install
-
           ```bash
-          # Arch / Omarchy (recommended)
+          # Arch / Omarchy
           sudo pacman -S python-gobject python-cairo gtk4 libadwaita
           pip install something-x==${{ steps.version.outputs.new }}
-
-          # Or download the wheel below
-          pip install something_x-${{ steps.version.outputs.new }}-py3-none-any.whl
           ```
           FOOTER
 
@@ -161,13 +93,13 @@ jobs:
           body_path: /tmp/release_notes.md
           files: dist/*
 
-      # ── Publish to PyPI (OIDC trusted publisher) ────────────────────────
+      # ── Publish to PyPI ─────────────────────────────────────────────────
       - name: Publish to PyPI
         if: steps.version.outputs.skip != 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
 
-      # ── Update AUR package ──────────────────────────────────────────────
-      - name: Update PKGBUILD and push to AUR
+      # ── Update AUR ──────────────────────────────────────────────────────
+      - name: Update PKGBUILD
         if: steps.version.outputs.skip != 'true'
         env:
           NEW_VERSION: ${{ steps.version.outputs.new }}
