@@ -543,7 +543,9 @@ class NothingDevice(GObject.Object):
             else:
                 modes = frozenset([ANCMode.OFF, ANCMode.TRANSPARENCY])
             self.state.supported_anc_modes = modes
-            _log(f"[protocol] supported ANC modes detected: {[ANCMode.LABELS.get(m, m) for m in sorted(modes)]}")
+            _log(
+                f"[protocol] supported ANC modes detected: {[ANCMode.LABELS.get(m, m) for m in sorted(modes)]}"
+            )
             changed = True
 
         return changed

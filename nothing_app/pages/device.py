@@ -582,11 +582,7 @@ class DevicePage(Gtk.Box):
         return False
 
     def _sync_anc_ui(self, active_mode: int):
-        supported = (
-            self._nothing_dev.state.supported_anc_modes
-            if self._nothing_dev
-            else None
-        )
+        supported = self._nothing_dev.state.supported_anc_modes if self._nothing_dev else None
         for mode, btn in self._anc_buttons:
             btn.set_visible(supported is None or mode in supported)
             if mode == active_mode:
