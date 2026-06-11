@@ -1,0 +1,41 @@
+[changelog]
+header = ""
+body = """
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group }}
+{% for commit in commits | sort(attribute="message") %}
+- {% if commit.scope %}**{{ commit.scope }}**: {% endif %}\
+{{ commit.message | upper_first }}\
+{% endfor %}
+{% endfor %}
+"""
+footer = ""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+commit_parsers = [
+  { message = "^feat",     group = "Features" },
+  { message = "^fix",      group = "Bug Fixes" },
+  { message = "^perf",     group = "Performance" },
+  { message = "^refactor", group = "Refactoring" },
+  { message = "^docs",     group = "Documentation" },
+  { message = "^style",    group = "Styling" },
+  { message = "^test",     group = "Testing" },
+  # skip anything that isn't useful in a user-facing changelog
+  { message = "^chore: release", skip = true },
+  { message = "^chore",    skip = true },
+  { message = "^ci",       skip = true },
+  { message = "^build",    skip = true },
+  # skip all merge commits regardless of how they are worded
+  { message = "^[Mm]erge[ /]", skip = true },
+  { message = "^Merged",       skip = true },
+]
+filter_commits = false
+# semver release tags only; dev-* tags are ignored for "previous release" calculation
+tag_pattern  = "v[0-9]+\\.[0-9]+\\.[0-9]+"
+ignore_tags  = "dev-.*"
+topo_order   = false
+sort_commits = "oldest"
