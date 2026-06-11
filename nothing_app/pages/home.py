@@ -218,6 +218,7 @@ class HomePage(Gtk.Box):
         self._scanning = True
         self._scan_btn.set_label("SCANNING…")
         self._scan_btn.set_sensitive(False)
+        self._scan_btn.add_css_class("scanning")
         self._bt.start_discovery()
         GLib.timeout_add_seconds(30, self._scan_done)
 
@@ -225,5 +226,6 @@ class HomePage(Gtk.Box):
         self._scanning = False
         self._scan_btn.set_label("SCAN FOR DEVICES")
         self._scan_btn.set_sensitive(True)
+        self._scan_btn.remove_css_class("scanning")
         self._refresh_list()
         return False
