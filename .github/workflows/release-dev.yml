@@ -30,9 +30,9 @@ jobs:
           DEV_VERSION="${CURRENT}.dev${{ github.run_number }}"
           SHORT_SHA=$(git rev-parse --short HEAD)
 
-          echo "current=$CURRENT"       >> $GITHUB_OUTPUT
+          echo "current=$CURRENT"         >> $GITHUB_OUTPUT
           echo "dev_version=$DEV_VERSION" >> $GITHUB_OUTPUT
-          echo "short_sha=$SHORT_SHA"   >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA"     >> $GITHUB_OUTPUT
           echo "Dev version: $DEV_VERSION (sha: $SHORT_SHA)"
 
       # ── Patch pyproject.toml for dev build ──────────────────────────────
@@ -55,29 +55,50 @@ jobs:
           python -m build
           ls dist/
 
+      # ── Generate changelog with git-cliff ──────────────────────────────
+      - name: Install git-cliff
+        run: pip install git-cliff
+
+      - name: Generate pre-release notes
+        run: |
+          # --unreleased: all conventional commits since the last vX.Y.Z tag
+          # cliff.toml: skips merge commits, ignores dev-* tags
+          git cliff --unreleased --strip all 2>/dev/null > /tmp/cliff_body.md
+          if [ ! -s /tmp/cliff_body.md ]; then
+            echo "No user-facing changes since last release." > /tmp/cliff_body.md
+          fi
+
+          cat > /tmp/release_notes.md <<HEADER
+          ## something-x-dev ${{ steps.version.outputs.dev_version }}
+
+          > Pre-release build from \`develop\` — not for production use.
+
+          **Commit**: \`${{ steps.version.outputs.short_sha }}\`
+
+          ### Changes since last stable release
+
+          HEADER
+          cat /tmp/cliff_body.md >> /tmp/release_notes.md
+          cat >> /tmp/release_notes.md <<'FOOTER'
+
+          ### Install
+
+          ```bash
+          pip install something-x-dev==${{ steps.version.outputs.dev_version }}
+
+          # Or download the wheel below
+          pip install something_x_dev-${{ steps.version.outputs.dev_version }}-py3-none-any.whl
+          ```
+          FOOTER
+
       # ── GitHub pre-release ──────────────────────────────────────────────
       - name: Create GitHub pre-release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "dev-${{ steps.version.outputs.short_sha }}"
           prerelease: true
-          generate_release_notes: true
+          body_path: /tmp/release_notes.md
           files: dist/*
-          body: |
-            ## something-x-dev ${{ steps.version.outputs.dev_version }}
-
-            > Pre-release build from `develop` — not for production use.
-
-            **Commit**: `${{ steps.version.outputs.short_sha }}`
-
-            ### Install
-
-            ```bash
-            pip install something-x-dev==${{ steps.version.outputs.dev_version }}
-
-            # Or download the wheel below
-            pip install something_x_dev-${{ steps.version.outputs.dev_version }}-py3-none-any.whl
-            ```
 
       # ── Publish to PyPI (OIDC — requires trusted publisher configured) ──
       - name: Publish to PyPI
