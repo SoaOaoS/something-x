@@ -100,13 +100,23 @@ class BluetoothManager(GObject.Object):
         try:
             self._connection = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
             mgr = Gio.DBusProxy.new_sync(
-                self._connection, _FLAGS_METHOD, None,
-                BLUEZ_SERVICE, "/", OBJ_MANAGER_IFACE, None,
+                self._connection,
+                _FLAGS_METHOD,
+                None,
+                BLUEZ_SERVICE,
+                "/",
+                OBJ_MANAGER_IFACE,
+                None,
             )
             # Non-blocking: populates devices and emits devices-changed when ready
             mgr.call(
-                "GetManagedObjects", None, Gio.DBusCallFlags.NONE, -1, None,
-                self._on_managed_objects, None,
+                "GetManagedObjects",
+                None,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None,
+                self._on_managed_objects,
+                None,
             )
             self._subscribe()
         except Exception as exc:
@@ -140,21 +150,42 @@ class BluetoothManager(GObject.Object):
         if not self._connection:
             return
         try:
-            self._subs.append(self._connection.signal_subscribe(
-                BLUEZ_SERVICE, PROPERTIES_IFACE, "PropertiesChanged",
-                None, None, Gio.DBusSignalFlags.NONE,
-                self._on_props_changed, None,
-            ))
-            self._subs.append(self._connection.signal_subscribe(
-                BLUEZ_SERVICE, OBJ_MANAGER_IFACE, "InterfacesAdded",
-                None, None, Gio.DBusSignalFlags.NONE,
-                self._on_ifaces_added, None,
-            ))
-            self._subs.append(self._connection.signal_subscribe(
-                BLUEZ_SERVICE, OBJ_MANAGER_IFACE, "InterfacesRemoved",
-                None, None, Gio.DBusSignalFlags.NONE,
-                self._on_ifaces_removed, None,
-            ))
+            self._subs.append(
+                self._connection.signal_subscribe(
+                    BLUEZ_SERVICE,
+                    PROPERTIES_IFACE,
+                    "PropertiesChanged",
+                    None,
+                    None,
+                    Gio.DBusSignalFlags.NONE,
+                    self._on_props_changed,
+                    None,
+                )
+            )
+            self._subs.append(
+                self._connection.signal_subscribe(
+                    BLUEZ_SERVICE,
+                    OBJ_MANAGER_IFACE,
+                    "InterfacesAdded",
+                    None,
+                    None,
+                    Gio.DBusSignalFlags.NONE,
+                    self._on_ifaces_added,
+                    None,
+                )
+            )
+            self._subs.append(
+                self._connection.signal_subscribe(
+                    BLUEZ_SERVICE,
+                    OBJ_MANAGER_IFACE,
+                    "InterfacesRemoved",
+                    None,
+                    None,
+                    Gio.DBusSignalFlags.NONE,
+                    self._on_ifaces_removed,
+                    None,
+                )
+            )
         except Exception as exc:
             print(f"[bluetooth] Signal subscribe failed: {exc}")
 
@@ -206,12 +237,22 @@ class BluetoothManager(GObject.Object):
             return
         try:
             mgr = Gio.DBusProxy.new_sync(
-                self._connection, _FLAGS_METHOD, None,
-                BLUEZ_SERVICE, "/", OBJ_MANAGER_IFACE, None,
+                self._connection,
+                _FLAGS_METHOD,
+                None,
+                BLUEZ_SERVICE,
+                "/",
+                OBJ_MANAGER_IFACE,
+                None,
             )
             mgr.call(
-                "GetManagedObjects", None, Gio.DBusCallFlags.NONE, -1, None,
-                self._on_managed_objects, None,
+                "GetManagedObjects",
+                None,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None,
+                self._on_managed_objects,
+                None,
             )
         except Exception as exc:
             print(f"[bluetooth] refresh: {exc}")
@@ -220,17 +261,28 @@ class BluetoothManager(GObject.Object):
         if not self._connection:
             return
         Gio.DBusProxy.new(
-            self._connection, _FLAGS_METHOD, None,
-            BLUEZ_SERVICE, path, DEVICE_IFACE,
-            None, self._on_connect_proxy_ready, on_error,
+            self._connection,
+            _FLAGS_METHOD,
+            None,
+            BLUEZ_SERVICE,
+            path,
+            DEVICE_IFACE,
+            None,
+            self._on_connect_proxy_ready,
+            on_error,
         )
 
     def _on_connect_proxy_ready(self, _source, result, on_error):
         try:
             proxy = Gio.DBusProxy.new_finish(result)
             proxy.call(
-                "Connect", None, Gio.DBusCallFlags.NONE, -1, None,
-                self._on_connect_done, on_error,
+                "Connect",
+                None,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None,
+                self._on_connect_done,
+                on_error,
             )
         except Exception as exc:
             print(f"[bluetooth] connect proxy failed: {exc}")
@@ -249,17 +301,28 @@ class BluetoothManager(GObject.Object):
         if not self._connection:
             return
         Gio.DBusProxy.new(
-            self._connection, _FLAGS_METHOD, None,
-            BLUEZ_SERVICE, path, DEVICE_IFACE,
-            None, self._on_disconnect_proxy_ready, None,
+            self._connection,
+            _FLAGS_METHOD,
+            None,
+            BLUEZ_SERVICE,
+            path,
+            DEVICE_IFACE,
+            None,
+            self._on_disconnect_proxy_ready,
+            None,
         )
 
     def _on_disconnect_proxy_ready(self, _source, result, _user_data):
         try:
             proxy = Gio.DBusProxy.new_finish(result)
             proxy.call(
-                "Disconnect", None, Gio.DBusCallFlags.NONE, -1, None,
-                self._on_disconnect_done, None,
+                "Disconnect",
+                None,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None,
+                self._on_disconnect_done,
+                None,
             )
         except Exception as exc:
             print(f"[bluetooth] disconnect proxy failed: {exc}")
@@ -275,12 +338,22 @@ class BluetoothManager(GObject.Object):
             return
         try:
             proxy = Gio.DBusProxy.new_sync(
-                self._connection, _FLAGS_METHOD, None,
-                BLUEZ_SERVICE, self._adapter_path, ADAPTER_IFACE, None,
+                self._connection,
+                _FLAGS_METHOD,
+                None,
+                BLUEZ_SERVICE,
+                self._adapter_path,
+                ADAPTER_IFACE,
+                None,
             )
             proxy.call(
-                "StartDiscovery", None, Gio.DBusCallFlags.NONE, -1, None,
-                self._on_start_discovery_done, None,
+                "StartDiscovery",
+                None,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None,
+                self._on_start_discovery_done,
+                None,
             )
         except Exception as exc:
             print(f"[bluetooth] discovery start: {exc}")
@@ -297,8 +370,13 @@ class BluetoothManager(GObject.Object):
             return False
         try:
             proxy = Gio.DBusProxy.new_sync(
-                self._connection, _FLAGS_METHOD, None,
-                BLUEZ_SERVICE, self._adapter_path, ADAPTER_IFACE, None,
+                self._connection,
+                _FLAGS_METHOD,
+                None,
+                BLUEZ_SERVICE,
+                self._adapter_path,
+                ADAPTER_IFACE,
+                None,
             )
             proxy.call_sync("StopDiscovery", None, Gio.DBusCallFlags.NONE, -1, None)
         except Exception:
