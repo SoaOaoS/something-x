@@ -32,7 +32,7 @@
 
 ### Protocol
 - [x] **Debug mode** — `SOMETHING_X_DEBUG=1` env var dumps raw RFCOMM frames for contributors
-- [ ] **Graceful ANC mode detection** — query supported modes from device instead of hardcoding
+- [x] **Graceful ANC mode detection** — infer supported modes from RFCOMM level response; hide unsupported buttons
 
 ---
 
