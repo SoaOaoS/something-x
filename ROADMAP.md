@@ -46,8 +46,8 @@
 - [ ] **Firmware update check** — compare device firmware against latest known version, show badge
 
 ### Tech
-- [ ] **Async BlueZ** — replace `dbus-python` with `dbus-fast` for non-blocking I/O
-- [ ] **Unit tests** — protocol encode/decode, CRC, ANC mode mapping
+- [x] **Async BlueZ** — replaced `dbus-python` with native `Gio` async D-Bus (non-blocking, no extra dependency)
+- [x] **Unit tests** — 65 tests covering CRC, protocol parsing, battery dedup, profiles, and BluetoothManager
 
 ---
 
