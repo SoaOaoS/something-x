@@ -1,6 +1,7 @@
 import os
 import dbus
 import dbus.service
+import dbus.mainloop.glib
 from gi.repository import GLib, GObject
 
 from .bluetooth import BluetoothManager, BluetoothDevice, device_icon_name
@@ -118,6 +119,7 @@ class SomethingXTray(GObject.Object):
 
     def _setup(self):
         try:
+            dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
             bus = dbus.SessionBus()
             service_name = f"org.kde.StatusNotifierItem-{os.getpid()}-1"
             self._item = _SNIItem(bus, service_name, self._on_show)
