@@ -136,6 +136,7 @@ class NothingDevice(GObject.Object):
         "connected": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "disconnected": (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
+    _LOW_BAT_THRESHOLDS = (20, 15, 10, 5)
 
     def __init__(self, address: str):
         super().__init__()
@@ -150,6 +151,7 @@ class NothingDevice(GObject.Object):
         self._last_anc_level: int = _ANC_STRONG
         self._thread: threading.Thread | None = None
         self._low_bat_notified: dict[str, set[int]] = {}
+        self._low_bat_seen: set[str] = set()
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -644,34 +646,36 @@ class NothingDevice(GObject.Object):
             eq_val = EQ_PRESETS.get(p["eq"], 0)
             self._x55_send(_CMD_SET_EQ, bytes([eq_val]), label=f"restore EQ={p['eq']}")
 
-    _LOW_BAT_THRESHOLDS = (20, 15, 10, 5)
-
     def _check_low_battery(self, slot: str, pct: int, label: str):
         if pct < 0:
             return
         if pct > 25:
             self._low_bat_notified.pop(slot, None)
+            self._low_bat_seen.add(slot)
             return
+        first_reading = slot not in self._low_bat_seen
+        self._low_bat_seen.add(slot)
         notified = self._low_bat_notified.setdefault(slot, set())
         for threshold in self._LOW_BAT_THRESHOLDS:
             if pct <= threshold and threshold not in notified:
                 notified.add(threshold)
-                threading.Thread(
-                    target=subprocess.run,
-                    args=(
-                        [
-                            "notify-send",
-                            "-u",
-                            "critical",
-                            "-i",
-                            "battery-caution",
-                            "Something X",
-                            f"{label}: {pct}% battery remaining",
-                        ],
-                    ),
-                    kwargs={"capture_output": True},
-                    daemon=True,
-                ).start()
+                if not first_reading:
+                    threading.Thread(
+                        target=subprocess.run,
+                        args=(
+                            [
+                                "notify-send",
+                                "-u",
+                                "critical",
+                                "-i",
+                                "battery-caution",
+                                "Something X",
+                                f"{label}: {pct}% battery remaining",
+                            ],
+                        ),
+                        kwargs={"capture_output": True},
+                        daemon=True,
+                    ).start()
                 break
 
     def _poll_earphone_status(self):

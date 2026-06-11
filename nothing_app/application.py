@@ -37,8 +37,6 @@ def _css_path() -> str:
         ref = importlib.resources.files("nothing_app.data").joinpath("style.css")
         return str(ref)
     except Exception:
-        import os
-
         return os.path.join(os.path.dirname(__file__), "data", "style.css")
 
 

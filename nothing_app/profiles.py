@@ -29,8 +29,8 @@ def save(address: str, anc_mode: int, eq_preset: str):
 
 def get_last_device() -> str | None:
     try:
-        addr = open(_LAST_DEV_FILE).read().strip()
-        return addr or None
+        with open(_LAST_DEV_FILE) as f:
+            return f.read().strip() or None
     except FileNotFoundError:
         return None
 
