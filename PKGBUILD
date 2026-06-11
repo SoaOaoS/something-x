@@ -7,10 +7,15 @@ arch=('any')
 url="https://github.com/SoaOaoS/nothingonmarchy"
 license=('MIT')
 depends=('python' 'python-gobject' 'gtk4' 'libadwaita')
-makedepends=('python-build' 'python-installer' 'python-wheel' 'python-setuptools' 'python-setuptools-scm')
+makedepends=('python-build' 'python-installer' 'python-wheel' 'python-setuptools')
 optdepends=('libpulse: volume control via pactl')
 source=("https://files.pythonhosted.org/packages/source/s/something-x/something_x-${pkgver}.tar.gz")
 sha256sums=('SKIP')
+
+prepare() {
+    cd "something_x-${pkgver}"
+    sed -i 's/, "setuptools-scm>=8"//' pyproject.toml
+}
 
 build() {
     cd "something_x-${pkgver}"
