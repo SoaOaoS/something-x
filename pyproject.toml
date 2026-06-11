@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=64", "wheel"]
+requires = ["setuptools>=64", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name            = "something-x"
-version = "1.6.0"
+dynamic         = ["version"]
 description     = "Something X device manager for Omarchy / Linux"
 readme          = "README.md"
 license         = { text = "MIT" }
@@ -42,6 +42,13 @@ nothing_app = ["data/*.css", "data/*.desktop"]
 
 [project.optional-dependencies]
 dev = ["ruff"]
+
+[tool.setuptools_scm]
+# After tag v1.7.0, develop automatically produces 1.7.1.devN (N = commits since tag).
+# Strips the local +gHASH so PyPI accepts the version.
+version_scheme = "guess-next-dev"
+local_scheme   = "no-local-version"
+version_file   = "nothing_app/_version.py"
 
 [tool.ruff]
 line-length = 110

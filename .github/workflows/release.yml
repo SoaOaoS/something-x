@@ -11,7 +11,6 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    # Skip if the commit was made by the bot itself (version bump commit)
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
 
     steps:
@@ -27,30 +26,26 @@ jobs:
           COMMIT_MSG=$(git log -1 --pretty=%B)
           echo "Commit: $COMMIT_MSG"
 
-          CURRENT=$(python3 -c "
-          import re, sys
-          m = re.search(r'version\s*=\s*\"([^\"]+)\"', open('pyproject.toml').read())
-          print(m.group(1) if m else sys.exit(1))
-          ")
-          echo "Current version: $CURRENT"
+          # Read current version from last vX.Y.Z tag (not pyproject.toml)
+          CURRENT=$(git describe --tags --abbrev=0 --match "v[0-9]*.[0-9]*.[0-9]*" 2>/dev/null | sed 's/^v//')
+          if [ -z "$CURRENT" ]; then
+            CURRENT="0.0.0"
+          fi
+          echo "Current version (last tag): $CURRENT"
 
           MAJOR=$(echo $CURRENT | cut -d. -f1)
           MINOR=$(echo $CURRENT | cut -d. -f2)
           PATCH=$(echo $CURRENT | cut -d. -f3)
 
-          # MAJOR: breaking change marker
           if echo "$COMMIT_MSG" | grep -qE "(^(feat|fix|refactor|perf)!:)|(BREAKING CHANGE:)"; then
             BUMP=major
             MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
-          # MINOR: new feature
           elif echo "$COMMIT_MSG" | grep -qE "^feat(\([^)]+\))?:"; then
             BUMP=minor
             MINOR=$((MINOR + 1)); PATCH=0
-          # PATCH: bug fix or improvement
           elif echo "$COMMIT_MSG" | grep -qE "^(fix|perf|refactor)(\([^)]+\))?:"; then
             BUMP=patch
             PATCH=$((PATCH + 1))
-          # No release: maintenance commits
           else
             echo "Commit type does not trigger a release (docs/chore/style/ci/test). Skipping."
             echo "skip=true" >> $GITHUB_OUTPUT
@@ -64,23 +59,13 @@ jobs:
           echo "bump=$BUMP"       >> $GITHUB_OUTPUT
           echo "skip=false"       >> $GITHUB_OUTPUT
 
-      # ── Update pyproject.toml ───────────────────────────────────────────
-      - name: Update version in pyproject.toml
-        if: steps.version.outputs.skip != 'true'
-        run: |
-          sed -i "s/^version *= *\"${{ steps.version.outputs.current }}\"/version = \"${{ steps.version.outputs.new }}\"/" pyproject.toml
-          grep "^version" pyproject.toml
-
-      # ── Commit, tag, push ───────────────────────────────────────────────
-      - name: Commit version bump and tag
+      # ── Tag and push (no pyproject.toml commit needed) ──────────────────
+      - name: Create and push release tag
         if: steps.version.outputs.skip != 'true'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add pyproject.toml
-          git commit -m "chore: release v${{ steps.version.outputs.new }} [skip ci]"
           git tag "v${{ steps.version.outputs.new }}"
-          git push origin main
           git push origin "v${{ steps.version.outputs.new }}"
 
       # ── Build wheel + sdist ─────────────────────────────────────────────
@@ -97,31 +82,48 @@ jobs:
           python -m build
           ls dist/
 
+      # ── Generate changelog with git-cliff ──────────────────────────────
+      - name: Install git-cliff
+        if: steps.version.outputs.skip != 'true'
+        run: pip install git-cliff
+
+      - name: Generate release notes
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          git cliff --latest --strip all 2>/dev/null > /tmp/cliff_body.md
+          if [ ! -s /tmp/cliff_body.md ]; then
+            echo "No user-facing changes in this release." > /tmp/cliff_body.md
+          fi
+
+          cat > /tmp/release_notes.md <<HEADER
+          ## Something X v${{ steps.version.outputs.new }}
+
+          HEADER
+          cat /tmp/cliff_body.md >> /tmp/release_notes.md
+          cat >> /tmp/release_notes.md <<'FOOTER'
+
+          ### Install
+
+          ```bash
+          # Arch / Omarchy (recommended)
+          sudo pacman -S python-gobject python-cairo gtk4 libadwaita
+          pip install something-x==${{ steps.version.outputs.new }}
+
+          # Or download the wheel below
+          pip install something_x-${{ steps.version.outputs.new }}-py3-none-any.whl
+          ```
+          FOOTER
+
       # ── GitHub Release ──────────────────────────────────────────────────
       - name: Create GitHub Release
         if: steps.version.outputs.skip != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ steps.version.outputs.new }}"
-          generate_release_notes: true
+          body_path: /tmp/release_notes.md
           files: dist/*
-          body: |
-            ## Something X v${{ steps.version.outputs.new }}
 
-            **Bump type**: `${{ steps.version.outputs.bump }}`
-
-            ### Install
-
-            ```bash
-            # Arch / Omarchy (recommended)
-            sudo pacman -S python-gobject python-dbus python-cairo gtk4 libadwaita
-            pip install something-x==${{ steps.version.outputs.new }}
-
-            # Or download the wheel below and install directly
-            pip install something_x-${{ steps.version.outputs.new }}-py3-none-any.whl
-            ```
-
-      # ── Publish to PyPI (OIDC trusted publisher — no secret needed) ─────
+      # ── Publish to PyPI (OIDC trusted publisher) ────────────────────────
       - name: Publish to PyPI
         if: steps.version.outputs.skip != 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -133,8 +135,6 @@ jobs:
           NEW_VERSION: ${{ steps.version.outputs.new }}
         run: |
           SHA256=$(sha256sum dist/something_x-${NEW_VERSION}.tar.gz | awk '{print $1}')
-          echo "sha256: $SHA256"
-
           sed -i "s/^pkgver=.*/pkgver=${NEW_VERSION}/" PKGBUILD
           sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
           sed -i "s/sha256sums=('[^']*')/sha256sums=('${SHA256}')/" PKGBUILD
