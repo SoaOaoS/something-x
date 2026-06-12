@@ -660,22 +660,25 @@ class NothingDevice(GObject.Object):
             if pct <= threshold and threshold not in notified:
                 notified.add(threshold)
                 if not first_reading:
-                    threading.Thread(
-                        target=subprocess.run,
-                        args=(
-                            [
-                                "notify-send",
-                                "-u",
-                                "critical",
-                                "-i",
-                                "battery-caution",
-                                "Something X",
-                                f"{label}: {pct}% battery remaining",
-                            ],
-                        ),
-                        kwargs={"capture_output": True},
-                        daemon=True,
-                    ).start()
+                    from . import profiles
+
+                    if profiles.get_notify_prefs(self.address).get("battery_low", True):
+                        threading.Thread(
+                            target=subprocess.run,
+                            args=(
+                                [
+                                    "notify-send",
+                                    "-u",
+                                    "critical",
+                                    "-i",
+                                    "battery-caution",
+                                    "Something X",
+                                    f"{label}: {pct}% battery remaining",
+                                ],
+                            ),
+                            kwargs={"capture_output": True},
+                            daemon=True,
+                        ).start()
                 break
 
     def _poll_earphone_status(self):

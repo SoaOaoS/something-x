@@ -28,14 +28,14 @@
 ## 1.9 — Quality of life
 
 ### Features
-- [ ] **Device nickname** — rename a paired device in the UI; stored in profiles
-- [ ] **Profile import / export** — share `.json` profile files between machines or with other users
+- [x] **Device nickname** — rename a paired device in the UI; stored in profiles
+- [x] **Profile import / export** — share `.json` profile files between machines or with other users
 - [ ] **Wear-detect MPRIS actions** — pause media when both buds are removed; resume when reinserted (opt-in)
-- [ ] **Notification preferences** — per-event toggles (battery low, connect, disconnect) in settings
-- [ ] **Theming** — user-selectable accent color and light/dark mode toggle; theme stored in config
+- [x] **Notification preferences** — per-event toggles (battery low, connect, disconnect) in settings
+- [x] **Theming** — user-selectable accent color and light/dark mode toggle; theme stored in config
 
 ### Tech
-- [ ] **Improved test coverage** — device page, tray, profiles round-trip, CLI flags
+- [x] **Improved test coverage** — profiles round-trip, nickname, notify prefs, notification gating (91 tests total)
 
 ---
 
