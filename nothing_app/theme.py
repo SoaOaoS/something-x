@@ -29,16 +29,16 @@ BG_PRESETS: list[tuple[str, str]] = [
 ]
 
 TEXTURES: list[tuple[str, str]] = [
-    ("none",      "None"),
-    ("dots",      "Dots"),
+    ("none", "None"),
+    ("dots", "Dots"),
     ("scanlines", "Lines"),
-    ("noise",     "Noise"),
+    ("noise", "Noise"),
 ]
 
 FONT_PRESETS: list[tuple[str, str]] = [
-    ("",                        "System"),
-    ("Adwaita Sans",            "Adwaita"),
-    ("iA Writer Quattro S",     "iA Writer"),
+    ("", "System"),
+    ("Adwaita Sans", "Adwaita"),
+    ("iA Writer Quattro S", "iA Writer"),
     ("JetBrainsMono Nerd Font", "Mono"),
 ]
 
@@ -75,6 +75,7 @@ def save(t: Theme) -> None:
 
 # ── Color helpers ─────────────────────────────────────────────────────────────
 
+
 def hex_to_rgb(h: str) -> tuple[int, int, int]:
     h = h.lstrip("#")
     return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
@@ -87,19 +88,20 @@ def _rgba(h: str, alpha: float) -> str:
 
 def _darken(h: str, factor: float) -> str:
     r, g, b = hex_to_rgb(h)
-    return f"#{min(255,int(r*factor)):02x}{min(255,int(g*factor)):02x}{min(255,int(b*factor)):02x}"
+    return f"#{min(255, int(r * factor)):02x}{min(255, int(g * factor)):02x}{min(255, int(b * factor)):02x}"
 
 
 def _lighten(h: str, factor: float) -> str:
     r, g, b = hex_to_rgb(h)
     return (
-        f"#{min(255,int(r+(255-r)*factor)):02x}"
-        f"{min(255,int(g+(255-g)*factor)):02x}"
-        f"{min(255,int(b+(255-b)*factor)):02x}"
+        f"#{min(255, int(r + (255 - r) * factor)):02x}"
+        f"{min(255, int(g + (255 - g) * factor)):02x}"
+        f"{min(255, int(b + (255 - b) * factor)):02x}"
     )
 
 
 # ── Texture patterns ──────────────────────────────────────────────────────────
+
 
 def _texture_css(name: str) -> str:
     if name == "dots":
@@ -121,26 +123,24 @@ def _texture_css(name: str) -> str:
             '<filter id="n">'
             '<feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch"/>'
             '<feColorMatrix type="saturate" values="0"/>'
-            '</filter>'
+            "</filter>"
             '<rect width="128" height="128" filter="url(#n)" opacity="0.07"/>'
-            '</svg>'
+            "</svg>"
         )
         enc = base64.b64encode(svg.encode()).decode()
-        return (
-            f'background-image: url("data:image/svg+xml;base64,{enc}");'
-            ' background-size: 128px 128px;'
-        )
+        return f'background-image: url("data:image/svg+xml;base64,{enc}"); background-size: 128px 128px;'
     return "background-image: none;"
 
 
 # ── CSS generation ────────────────────────────────────────────────────────────
 
+
 def generate_css(t: Theme) -> str:
     acc = t.accent
-    dark    = _darken(acc, 0.72)
-    darker  = _darken(acc, 0.62)
+    dark = _darken(acc, 0.72)
+    darker = _darken(acc, 0.62)
     darkest = _darken(acc, 0.52)
-    hover   = _lighten(acc, 0.07)
+    hover = _lighten(acc, 0.07)
 
     def a(alpha: float) -> str:
         return _rgba(acc, alpha)
@@ -149,12 +149,16 @@ def generate_css(t: Theme) -> str:
     bg = t.bg_color
     # subtle gradient variants derived from bg_color
     bg_light = _lighten(bg, 0.05)
-    bg_dark  = _darken(bg, 0.80) if bg != "#000000" else bg
+    bg_dark = _darken(bg, 0.80) if bg != "#000000" else bg
 
-    c1  = co * 0.055;  c2  = co * 0.022
-    h1  = co * 0.082;  h2  = co * 0.036
-    s1  = co * 0.048;  s2  = co * 0.018
-    a1  = co * 0.040;  a2  = co * 0.014
+    c1 = co * 0.055
+    c2 = co * 0.022
+    h1 = co * 0.082
+    h2 = co * 0.036
+    s1 = co * 0.048
+    s2 = co * 0.018
+    a1 = co * 0.040
+    a2 = co * 0.014
 
     # blur and texture live on .app-background (behind content) — not on content widgets
     blur_rule = f"filter: blur({t.blur}px);" if t.blur else ""

@@ -509,7 +509,9 @@ class DevicePage(Gtk.Box):
         self._notif_connect_switch.set_active(notify_prefs.get("connect", True))
         self._notif_connect_switch.set_valign(Gtk.Align.CENTER)
         self._notif_connect_switch.connect("state-set", self._on_notif_connect_toggled)
-        notif_group.append(_settings_row("Connected", "Alert when device connects", self._notif_connect_switch))
+        notif_group.append(
+            _settings_row("Connected", "Alert when device connects", self._notif_connect_switch)
+        )
 
         self._notif_disconnect_switch = Gtk.Switch()
         self._notif_disconnect_switch.set_active(notify_prefs.get("disconnect", True))

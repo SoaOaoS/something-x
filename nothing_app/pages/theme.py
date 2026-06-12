@@ -11,6 +11,7 @@ from ..theme import ACCENT_PRESETS, BG_PRESETS, FONT_PRESETS, TEXTURES, Theme, h
 
 # ── Swatch drawing area ───────────────────────────────────────────────────────
 
+
 class _Swatch(Gtk.DrawingArea):
     def __init__(self, color: str, on_picked: Callable[[str], None]):
         super().__init__()
@@ -63,6 +64,7 @@ class _Swatch(Gtk.DrawingArea):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _section(label: str) -> Gtk.Label:
     lbl = Gtk.Label(label=label)
     lbl.add_css_class("section-label")
@@ -90,9 +92,7 @@ def _settings_row(title: str, subtitle: str = "", right_widget: Gtk.Widget | Non
     return row
 
 
-def _make_slider(
-    min_val: float, max_val: float, step: float, value: float
-) -> tuple[Gtk.Scale, Gtk.Label]:
+def _make_slider(min_val: float, max_val: float, step: float, value: float) -> tuple[Gtk.Scale, Gtk.Label]:
     scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, min_val, max_val, step)
     scale.set_hexpand(True)
     scale.set_draw_value(False)
@@ -105,7 +105,9 @@ def _make_slider(
     return scale, lbl
 
 
-def _swatch_row(presets: list[tuple[str, str]], current: str, on_picked: Callable[[str], None]) -> tuple[Gtk.Box, list[_Swatch]]:
+def _swatch_row(
+    presets: list[tuple[str, str]], current: str, on_picked: Callable[[str], None]
+) -> tuple[Gtk.Box, list[_Swatch]]:
     box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
     box.set_margin_top(16)
     box.set_margin_bottom(16)
@@ -125,10 +127,12 @@ def _swatch_row(presets: list[tuple[str, str]], current: str, on_picked: Callabl
 
 # ── ThemePage ─────────────────────────────────────────────────────────────────
 
+
 class ThemePage(Gtk.Box):
     def __init__(self, theme: Theme, on_change: Callable[[Theme], None]):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         import dataclasses
+
         self._theme = dataclasses.replace(theme)
         self._on_change_cb = on_change
 
@@ -203,9 +207,7 @@ class ThemePage(Gtk.Box):
         group.add_css_class("settings-group")
         group.set_margin_bottom(4)
 
-        swatch_box, self._bg_swatches = _swatch_row(
-            BG_PRESETS, self._theme.bg_color, self._on_bg_swatch
-        )
+        swatch_box, self._bg_swatches = _swatch_row(BG_PRESETS, self._theme.bg_color, self._on_bg_swatch)
         group.append(swatch_box)
 
         sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
@@ -231,9 +233,7 @@ class ThemePage(Gtk.Box):
 
         self._opacity_scale, op_lbl = _make_slider(0.05, 1.0, 0.05, self._theme.window_opacity)
         op_lbl.set_label(f"{int(self._theme.window_opacity * 100)}%")
-        self._opacity_handler = self._opacity_scale.connect(
-            "value-changed", self._on_opacity_changed, op_lbl
-        )
+        self._opacity_handler = self._opacity_scale.connect("value-changed", self._on_opacity_changed, op_lbl)
         row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         row_box.set_hexpand(True)
         row_box.append(self._opacity_scale)
@@ -242,9 +242,7 @@ class ThemePage(Gtk.Box):
 
         self._card_scale, card_lbl = _make_slider(0.15, 1.0, 0.05, self._theme.card_opacity)
         card_lbl.set_label(f"{int(self._theme.card_opacity * 100)}%")
-        self._card_handler = self._card_scale.connect(
-            "value-changed", self._on_card_changed, card_lbl
-        )
+        self._card_handler = self._card_scale.connect("value-changed", self._on_card_changed, card_lbl)
         card_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         card_row.set_hexpand(True)
         card_row.append(self._card_scale)
@@ -262,9 +260,7 @@ class ThemePage(Gtk.Box):
 
         self._blur_scale, blur_lbl = _make_slider(0, 20, 1, self._theme.blur)
         blur_lbl.set_label(f"{self._theme.blur}px")
-        self._blur_handler = self._blur_scale.connect(
-            "value-changed", self._on_blur_changed, blur_lbl
-        )
+        self._blur_handler = self._blur_scale.connect("value-changed", self._on_blur_changed, blur_lbl)
         blur_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         blur_row.set_hexpand(True)
         blur_row.append(self._blur_scale)
@@ -350,7 +346,9 @@ class ThemePage(Gtk.Box):
     def _on_accent_color_set(self, btn: Gtk.ColorButton):
         rgba = btn.get_rgba()
         self._theme.accent = "#{:02x}{:02x}{:02x}".format(
-            int(rgba.red * 255), int(rgba.green * 255), int(rgba.blue * 255),
+            int(rgba.red * 255),
+            int(rgba.green * 255),
+            int(rgba.blue * 255),
         )
         self._update_accent_swatches()
         self._emit()
@@ -371,7 +369,9 @@ class ThemePage(Gtk.Box):
     def _on_bg_color_set(self, btn: Gtk.ColorButton):
         rgba = btn.get_rgba()
         self._theme.bg_color = "#{:02x}{:02x}{:02x}".format(
-            int(rgba.red * 255), int(rgba.green * 255), int(rgba.blue * 255),
+            int(rgba.red * 255),
+            int(rgba.green * 255),
+            int(rgba.blue * 255),
         )
         self._update_bg_swatches()
         self._emit()
@@ -420,6 +420,7 @@ class ThemePage(Gtk.Box):
 
     def _on_reset(self, _btn):
         import dataclasses
+
         self._theme = Theme()
         self._reload_controls()
         self._emit()
@@ -479,4 +480,5 @@ class ThemePage(Gtk.Box):
 
     def _emit(self):
         import dataclasses
+
         self._on_change_cb(dataclasses.replace(self._theme))
