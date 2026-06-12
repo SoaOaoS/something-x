@@ -89,7 +89,7 @@ pip install something-x
 <summary>Fedora 39+</summary>
 
 ```bash
-sudo dnf install python3-gobject python3-dbus python3-cairo gtk4 libadwaita
+sudo dnf install python3-pip python3-gobject python3-dbus python3-cairo gtk4 libadwaita
 pip install something-x
 ```
 
