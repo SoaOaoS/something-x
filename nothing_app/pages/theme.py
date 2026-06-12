@@ -6,7 +6,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gdk, GLib, Gtk
 
-from ..theme import ACCENT_PRESETS, BG_PRESETS, TEXTURES, Theme, hex_to_rgb
+from ..theme import ACCENT_PRESETS, BG_PRESETS, FONT_PRESETS, TEXTURES, Theme, hex_to_rgb
 
 
 # ── Swatch drawing area ───────────────────────────────────────────────────────
@@ -147,6 +147,7 @@ class ThemePage(Gtk.Box):
         self._blur_scale: Gtk.Scale | None = None
         self._blur_handler: int | None = None
         self._texture_btns: list[tuple[str, Gtk.ToggleButton]] = []
+        self._font_btns: list[tuple[str, Gtk.ToggleButton]] = []
         self._build()
 
     # ── Build ─────────────────────────────────────────────────────────────────
@@ -166,6 +167,7 @@ class ThemePage(Gtk.Box):
         self._build_glass(page)
         self._build_blur(page)
         self._build_texture(page)
+        self._build_font(page)
         self._build_reset(page)
 
     def _build_accent(self, page: Gtk.Box):
@@ -297,6 +299,32 @@ class ThemePage(Gtk.Box):
         group.append(btn_box)
         page.append(group)
 
+    def _build_font(self, page: Gtk.Box):
+        page.append(_section("FONT"))
+
+        group = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        group.add_css_class("settings-group")
+        group.set_margin_bottom(4)
+
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        btn_box.add_css_class("linked")
+        btn_box.set_margin_top(14)
+        btn_box.set_margin_bottom(14)
+        btn_box.set_margin_start(18)
+        btn_box.set_margin_end(18)
+        btn_box.set_hexpand(True)
+
+        for key, label in FONT_PRESETS:
+            btn = Gtk.ToggleButton(label=label)
+            btn.set_hexpand(True)
+            btn.set_active(key == self._theme.font_family)
+            btn.connect("toggled", self._on_font_toggled, key)
+            btn_box.append(btn)
+            self._font_btns.append((key, btn))
+
+        group.append(btn_box)
+        page.append(group)
+
     def _build_reset(self, page: Gtk.Box):
         reset = Gtk.Button(label="RESET TO DEFAULT")
         reset.add_css_class("disconnect-button")
@@ -379,6 +407,17 @@ class ThemePage(Gtk.Box):
         self._theme.texture = key
         self._emit()
 
+    def _on_font_toggled(self, btn: Gtk.ToggleButton, key: str):
+        if not btn.get_active():
+            return
+        for k, b in self._font_btns:
+            if k != key:
+                b.handler_block_by_func(self._on_font_toggled)
+                b.set_active(False)
+                b.handler_unblock_by_func(self._on_font_toggled)
+        self._theme.font_family = key
+        self._emit()
+
     def _on_reset(self, _btn):
         import dataclasses
         self._theme = Theme()
@@ -432,6 +471,11 @@ class ThemePage(Gtk.Box):
             btn.handler_block_by_func(self._on_texture_toggled)
             btn.set_active(key == self._theme.texture)
             btn.handler_unblock_by_func(self._on_texture_toggled)
+
+        for key, btn in self._font_btns:
+            btn.handler_block_by_func(self._on_font_toggled)
+            btn.set_active(key == self._theme.font_family)
+            btn.handler_unblock_by_func(self._on_font_toggled)
 
     def _emit(self):
         import dataclasses

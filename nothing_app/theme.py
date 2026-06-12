@@ -35,6 +35,13 @@ TEXTURES: list[tuple[str, str]] = [
     ("noise",     "Noise"),
 ]
 
+FONT_PRESETS: list[tuple[str, str]] = [
+    ("",                        "System"),
+    ("Adwaita Sans",            "Adwaita"),
+    ("iA Writer Quattro S",     "iA Writer"),
+    ("JetBrainsMono Nerd Font", "Mono"),
+]
+
 
 @dataclass
 class Theme:
@@ -44,6 +51,7 @@ class Theme:
     card_opacity: float = 1.0
     blur: int = 0
     texture: str = "none"
+    font_family: str = ""
 
 
 def load() -> Theme:
@@ -152,8 +160,11 @@ def generate_css(t: Theme) -> str:
     blur_rule = f"filter: blur({t.blur}px);" if t.blur else ""
     texture = _texture_css(t.texture)
 
+    font_rule = f'* {{ font-family: "{t.font_family}"; }}' if t.font_family else ""
+
     return f"""/* Nothing X — generated theme override */
 
+{font_rule}
 @define-color accent_color {acc};
 @define-color accent_bg_color {acc};
 @define-color accent_fg_color #ffffff;
