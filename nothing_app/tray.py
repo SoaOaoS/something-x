@@ -4,7 +4,7 @@ import dbus.service
 import dbus.mainloop.glib
 from gi.repository import GLib, GObject
 
-from .bluetooth import BluetoothManager, BluetoothDevice, device_icon_name
+from .bluetooth import BluetoothManager, device_icon_name
 
 _ITEM_IFACE = "org.kde.StatusNotifierItem"
 _WATCHER_IFACE = "org.kde.StatusNotifierWatcher"

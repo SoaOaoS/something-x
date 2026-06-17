@@ -1,10 +1,10 @@
 import math
-from typing import Callable
+from collections.abc import Callable
 
 import gi
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gdk, GLib, Gtk
+from gi.repository import Gdk, Gtk
 
 from ..theme import ACCENT_PRESETS, BG_PRESETS, FONT_PRESETS, TEXTURES, Theme, hex_to_rgb
 
@@ -345,11 +345,8 @@ class ThemePage(Gtk.Box):
 
     def _on_accent_color_set(self, btn: Gtk.ColorButton):
         rgba = btn.get_rgba()
-        self._theme.accent = "#{:02x}{:02x}{:02x}".format(
-            int(rgba.red * 255),
-            int(rgba.green * 255),
-            int(rgba.blue * 255),
-        )
+        r, g, b = int(rgba.red * 255), int(rgba.green * 255), int(rgba.blue * 255)
+        self._theme.accent = f"#{r:02x}{g:02x}{b:02x}"
         self._update_accent_swatches()
         self._emit()
 
@@ -368,11 +365,8 @@ class ThemePage(Gtk.Box):
 
     def _on_bg_color_set(self, btn: Gtk.ColorButton):
         rgba = btn.get_rgba()
-        self._theme.bg_color = "#{:02x}{:02x}{:02x}".format(
-            int(rgba.red * 255),
-            int(rgba.green * 255),
-            int(rgba.blue * 255),
-        )
+        r, g, b = int(rgba.red * 255), int(rgba.green * 255), int(rgba.blue * 255)
+        self._theme.bg_color = f"#{r:02x}{g:02x}{b:02x}"
         self._update_bg_swatches()
         self._emit()
 
@@ -419,8 +413,6 @@ class ThemePage(Gtk.Box):
         self._emit()
 
     def _on_reset(self, _btn):
-        import dataclasses
-
         self._theme = Theme()
         self._reload_controls()
         self._emit()
@@ -428,11 +420,11 @@ class ThemePage(Gtk.Box):
     # ── Internal helpers ──────────────────────────────────────────────────────
 
     def _update_accent_swatches(self):
-        for sw, (color, _) in zip(self._accent_swatches, ACCENT_PRESETS):
+        for sw, (color, _) in zip(self._accent_swatches, ACCENT_PRESETS, strict=False):
             sw.set_active(color.lower() == self._theme.accent.lower())
 
     def _update_bg_swatches(self):
-        for sw, (color, _) in zip(self._bg_swatches, BG_PRESETS):
+        for sw, (color, _) in zip(self._bg_swatches, BG_PRESETS, strict=False):
             sw.set_active(color.lower() == self._theme.bg_color.lower())
 
     def _reload_controls(self):

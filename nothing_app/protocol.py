@@ -152,6 +152,8 @@ class NothingDevice(GObject.Object):
         self._thread: threading.Thread | None = None
         self._low_bat_notified: dict[str, set[int]] = {}
         self._low_bat_seen: set[str] = set()
+        self._wear_both_removed: bool = False
+        self._wear_paused: bool = False
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -545,9 +547,8 @@ class NothingDevice(GObject.Object):
             else:
                 modes = frozenset([ANCMode.OFF, ANCMode.TRANSPARENCY])
             self.state.supported_anc_modes = modes
-            _log(
-                f"[protocol] supported ANC modes detected: {[ANCMode.LABELS.get(m, m) for m in sorted(modes)]}"
-            )
+            labels = [ANCMode.LABELS.get(m, m) for m in sorted(modes)]
+            _log(f"[protocol] supported ANC modes detected: {labels}")
             changed = True
 
         return changed
@@ -579,6 +580,7 @@ class NothingDevice(GObject.Object):
                 changed = True
         if changed:
             _log(f"[protocol] wearing L={self.state.left_wearing} R={self.state.right_wearing}")
+            self._check_wear_mpris()
         return changed
 
     # ── Legacy 0x03 frame handling (status-only fallback) ────────────────────
@@ -680,6 +682,36 @@ class NothingDevice(GObject.Object):
                             daemon=True,
                         ).start()
                 break
+
+    def _check_wear_mpris(self):
+        from . import profiles
+
+        if not profiles.get_notify_prefs(self.address).get("wear_mpris", False):
+            self._wear_both_removed = False
+            self._wear_paused = False
+            return
+
+        both_removed = not self.state.left_wearing and not self.state.right_wearing
+
+        if both_removed and not self._wear_both_removed:
+            self._wear_both_removed = True
+            self._wear_paused = True
+            threading.Thread(
+                target=subprocess.run,
+                args=(["playerctl", "pause"],),
+                kwargs={"capture_output": True},
+                daemon=True,
+            ).start()
+        elif not both_removed and self._wear_both_removed:
+            self._wear_both_removed = False
+            if self._wear_paused:
+                self._wear_paused = False
+                threading.Thread(
+                    target=subprocess.run,
+                    args=(["playerctl", "play"],),
+                    kwargs={"capture_output": True},
+                    daemon=True,
+                ).start()
 
     def _poll_earphone_status(self):
         # The firmware only computes a fresh per-bud snapshot when asked; the

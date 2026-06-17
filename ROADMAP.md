@@ -30,7 +30,7 @@
 ### Features
 - [x] **Device nickname** — rename a paired device in the UI; stored in profiles
 - [x] **Profile import / export** — share `.json` profile files between machines or with other users
-- [ ] **Wear-detect MPRIS actions** — pause media when both buds are removed; resume when reinserted (opt-in)
+- [x] **Wear-detect MPRIS actions** — pause media when both buds are removed; resume when reinserted (opt-in)
 - [x] **Notification preferences** — per-event toggles (battery low, connect, disconnect) in settings
 - [x] **Theming** — user-selectable accent color and light/dark mode toggle; theme stored in config
 

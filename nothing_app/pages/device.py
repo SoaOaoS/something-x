@@ -9,7 +9,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("PangoCairo", "1.0")
-from gi.repository import Gtk, GLib, PangoCairo, Gio
+from gi.repository import Gtk, GLib, PangoCairo
 
 from ..bluetooth import BluetoothDevice, BluetoothManager
 from ..protocol import NothingDevice, ANCMode, EQ_PRESETS
@@ -477,12 +477,15 @@ class DevicePage(Gtk.Box):
         )
 
         self._auto_pause_switch = Gtk.Switch()
-        self._auto_pause_switch.set_active(True)
+        self._auto_pause_switch.set_active(
+            profiles.get_notify_prefs(self._bt_device.address).get("wear_mpris", False)
+        )
         self._auto_pause_switch.set_valign(Gtk.Align.CENTER)
+        self._auto_pause_switch.connect("state-set", self._on_auto_pause_toggled)
         settings_group.append(
             _settings_row(
                 "Auto-Pause",
-                "Pause media on removal",
+                "Pause/resume media with wear detection",
                 self._auto_pause_switch,
             )
         )
@@ -711,6 +714,10 @@ class DevicePage(Gtk.Box):
     def _on_nickname_focus_lost(self, entry, _param):
         if not entry.has_focus():
             self._save_nickname()
+
+    def _on_auto_pause_toggled(self, _switch, state: bool):
+        profiles.set_notify_prefs(self._bt_device.address, {"wear_mpris": state})
+        return False
 
     def _on_notif_battery_toggled(self, _switch, state: bool):
         profiles.set_notify_prefs(self._bt_device.address, {"battery_low": state})

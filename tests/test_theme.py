@@ -66,7 +66,9 @@ def test_load_bad_json_returns_defaults(tmp_path):
 
 
 def test_save_and_load_roundtrip():
-    t = Theme(accent="#3b82f6", bg_color="#1a1b26", window_opacity=0.8, card_opacity=0.5, blur=6, texture="dots")
+    t = Theme(
+        accent="#3b82f6", bg_color="#1a1b26", window_opacity=0.8, card_opacity=0.5, blur=6, texture="dots"
+    )
     save(t)
     t2 = load()
     assert t2 == t
@@ -319,7 +321,7 @@ def test_generate_css_bg_color_default_is_black():
 
 def test_generate_css_custom_bg_used_in_app_background_gradient():
     css = generate_css(Theme(bg_color="#1e1e2e"))
-    bg_block = css[css.index(".app-background {"):][:300]
+    bg_block = css[css.index(".app-background {") :][:300]
     assert "1e1e2e" in bg_block or "background" in bg_block
 
 
@@ -344,29 +346,29 @@ def test_generate_css_blur_emits_filter():
 
 def test_generate_css_blur_appears_in_app_background():
     css = generate_css(Theme(blur=4))
-    bg_section = css[css.index(".app-background {"):]
-    first_block = bg_section[:bg_section.index("}") + 1]
+    bg_section = css[css.index(".app-background {") :]
+    first_block = bg_section[: bg_section.index("}") + 1]
     assert "blur(4px)" in first_block
 
 
 def test_generate_css_blur_not_in_nothing_page():
     css = generate_css(Theme(blur=6))
-    page_section = css[css.index(".nothing-page {"):]
-    first_block = page_section[:page_section.index("}") + 1]
+    page_section = css[css.index(".nothing-page {") :]
+    first_block = page_section[: page_section.index("}") + 1]
     assert "blur(" not in first_block
 
 
 def test_generate_css_blur_not_in_device_card():
     css = generate_css(Theme(blur=6))
-    card_section = css[css.index(".device-card {"):]
-    first_block = card_section[:card_section.index("}") + 1]
+    card_section = css[css.index(".device-card {") :]
+    first_block = card_section[: card_section.index("}") + 1]
     assert "blur(" not in first_block
 
 
 def test_generate_css_blur_not_in_settings_group():
     css = generate_css(Theme(blur=6))
-    group_section = css[css.index(".settings-group {"):]
-    first_block = group_section[:group_section.index("}") + 1]
+    group_section = css[css.index(".settings-group {") :]
+    first_block = group_section[: group_section.index("}") + 1]
     assert "blur(" not in first_block
 
 
@@ -392,25 +394,25 @@ def test_generate_css_card_opacity_scales_alpha():
 
 def test_generate_css_texture_none_sets_no_image():
     css = generate_css(Theme(texture="none"))
-    bg_block = css[css.index(".app-background {"):][:300]
+    bg_block = css[css.index(".app-background {") :][:300]
     assert "background-image: none" in bg_block
 
 
 def test_generate_css_texture_dots():
     css = generate_css(Theme(texture="dots"))
-    bg_block = css[css.index(".app-background {"):][:400]
+    bg_block = css[css.index(".app-background {") :][:400]
     assert "radial-gradient" in bg_block
 
 
 def test_generate_css_texture_scanlines():
     css = generate_css(Theme(texture="scanlines"))
-    bg_block = css[css.index(".app-background {"):][:500]
+    bg_block = css[css.index(".app-background {") :][:500]
     assert "repeating-linear-gradient" in bg_block
 
 
 def test_generate_css_texture_noise():
     css = generate_css(Theme(texture="noise"))
-    bg_block = css[css.index(".app-background {"):][:700]
+    bg_block = css[css.index(".app-background {") :][:700]
     assert "data:image/svg+xml;base64," in bg_block
 
 
