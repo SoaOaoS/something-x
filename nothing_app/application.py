@@ -50,6 +50,9 @@ class SomethingXApplication(Adw.Application):
         self._splash: SplashScreen | None = None
         self._window: SomethingXWindow | None = None
         self._tray: SomethingXTray | None = None
+        self._theme_provider: Gtk.CssProvider | None = None
+        self._current_theme = None
+        self._theme_save_id: int | None = None
         self.connect("activate", self._on_activate)
 
     def _on_activate(self, _app):
@@ -61,6 +64,7 @@ class SomethingXApplication(Adw.Application):
         _install_desktop_file()
         Adw.StyleManager.get_default().set_color_scheme(Adw.ColorScheme.FORCE_DARK)
         self._load_css()
+        self._load_theme_css()
         self._bt = BluetoothManager()
         splash = SplashScreen(on_done=self._on_splash_done)
         splash.set_application(self)
@@ -72,6 +76,8 @@ class SomethingXApplication(Adw.Application):
         win = SomethingXWindow(bt_manager=self._bt, application=self)
         win.connect("close-request", self._on_window_close)
         self._window = win
+        if self._current_theme is not None:
+            win.set_opacity(max(0.05, min(1.0, self._current_theme.window_opacity)))
         self._tray = SomethingXTray(self._bt, on_show_window=win.present)
         win.present()
         if self._splash:
@@ -92,6 +98,49 @@ class SomethingXApplication(Adw.Application):
             start_new_session=True,
         )
         return True  # prevent default close/destroy
+
+    def _load_theme_css(self):
+        from . import theme as _theme_mod
+
+        self._current_theme = _theme_mod.load()
+        self._theme_provider = Gtk.CssProvider()
+        css = _theme_mod.generate_css(self._current_theme)
+        try:
+            self._theme_provider.load_from_string(css)
+        except AttributeError:
+            self._theme_provider.load_from_data(css.encode())
+
+        display = Gdk.Display.get_default()
+        if display:
+            Gtk.StyleContext.add_provider_for_display(
+                display,
+                self._theme_provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1,
+            )
+
+    def apply_theme(self, t):
+        from . import theme as _theme_mod
+
+        self._current_theme = t
+        css = _theme_mod.generate_css(t)
+        try:
+            self._theme_provider.load_from_string(css)
+        except AttributeError:
+            self._theme_provider.load_from_data(css.encode())
+
+        if self._window is not None:
+            self._window.set_opacity(max(0.05, min(1.0, t.window_opacity)))
+
+        if self._theme_save_id is not None:
+            GLib.source_remove(self._theme_save_id)
+        self._theme_save_id = GLib.timeout_add(500, self._flush_theme_save)
+
+    def _flush_theme_save(self):
+        from . import theme as _theme_mod
+
+        _theme_mod.save(self._current_theme)
+        self._theme_save_id = None
+        return False
 
     def _load_css(self):
         provider = Gtk.CssProvider()

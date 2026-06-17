@@ -1,3 +1,4 @@
+import json
 import math
 import re
 import subprocess
@@ -12,6 +13,7 @@ from gi.repository import Gtk, GLib, PangoCairo
 
 from ..bluetooth import BluetoothDevice, BluetoothManager
 from ..protocol import NothingDevice, ANCMode, EQ_PRESETS
+from .. import profiles
 
 
 def _mono_font() -> str:
@@ -475,23 +477,72 @@ class DevicePage(Gtk.Box):
         )
 
         self._auto_pause_switch = Gtk.Switch()
-        self._auto_pause_switch.set_active(True)
+        self._auto_pause_switch.set_active(
+            profiles.get_notify_prefs(self._bt_device.address).get("wear_mpris", False)
+        )
         self._auto_pause_switch.set_valign(Gtk.Align.CENTER)
+        self._auto_pause_switch.connect("state-set", self._on_auto_pause_toggled)
         settings_group.append(
             _settings_row(
                 "Auto-Pause",
-                "Pause media on removal",
+                "Pause/resume media with wear detection",
                 self._auto_pause_switch,
             )
         )
 
         page.append(settings_group)
 
+        page.append(_section("NOTIFICATIONS"))
+
+        notif_group = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        notif_group.add_css_class("settings-group")
+        notif_group.set_margin_bottom(4)
+
+        notify_prefs = profiles.get_notify_prefs(self._bt_device.address)
+
+        self._notif_battery_switch = Gtk.Switch()
+        self._notif_battery_switch.set_active(notify_prefs.get("battery_low", True))
+        self._notif_battery_switch.set_valign(Gtk.Align.CENTER)
+        self._notif_battery_switch.connect("state-set", self._on_notif_battery_toggled)
+        notif_group.append(
+            _settings_row("Battery Low", "Alert when battery drops below 20%", self._notif_battery_switch)
+        )
+
+        self._notif_connect_switch = Gtk.Switch()
+        self._notif_connect_switch.set_active(notify_prefs.get("connect", True))
+        self._notif_connect_switch.set_valign(Gtk.Align.CENTER)
+        self._notif_connect_switch.connect("state-set", self._on_notif_connect_toggled)
+        notif_group.append(
+            _settings_row("Connected", "Alert when device connects", self._notif_connect_switch)
+        )
+
+        self._notif_disconnect_switch = Gtk.Switch()
+        self._notif_disconnect_switch.set_active(notify_prefs.get("disconnect", True))
+        self._notif_disconnect_switch.set_valign(Gtk.Align.CENTER)
+        self._notif_disconnect_switch.connect("state-set", self._on_notif_disconnect_toggled)
+        notif_group.append(
+            _settings_row("Disconnected", "Alert when device disconnects", self._notif_disconnect_switch)
+        )
+
+        page.append(notif_group)
+
         page.append(_section("DEVICE INFO"))
 
         info_group = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         info_group.add_css_class("settings-group")
         info_group.set_margin_bottom(4)
+
+        nick_entry = Gtk.Entry()
+        nick_entry.set_hexpand(True)
+        nick_entry.set_valign(Gtk.Align.CENTER)
+        saved_nick = profiles.get_nickname(self._bt_device.address)
+        if saved_nick:
+            nick_entry.set_text(saved_nick)
+        nick_entry.set_placeholder_text(self._bt_device.name)
+        nick_entry.connect("activate", self._on_nickname_activate)
+        nick_entry.connect("notify::has-focus", self._on_nickname_focus_lost)
+        self._nick_entry = nick_entry
+        info_group.append(_settings_row("Nickname", right_widget=nick_entry))
 
         self._fw_label = Gtk.Label(label="—")
         self._fw_label.add_css_class("info-value")
@@ -507,6 +558,23 @@ class DevicePage(Gtk.Box):
         addr_val.add_css_class("info-value")
         addr_val.set_xalign(1)
         info_group.append(_settings_row("Address", right_widget=addr_val))
+
+        io_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        io_box.set_margin_top(4)
+
+        export_btn = Gtk.Button(label="Export Profile")
+        export_btn.add_css_class("settings-row-action")
+        export_btn.set_hexpand(True)
+        export_btn.connect("clicked", self._on_export_clicked)
+
+        import_btn = Gtk.Button(label="Import Profile")
+        import_btn.add_css_class("settings-row-action")
+        import_btn.set_hexpand(True)
+        import_btn.connect("clicked", self._on_import_clicked)
+
+        io_box.append(export_btn)
+        io_box.append(import_btn)
+        info_group.append(io_box)
 
         page.append(info_group)
 
@@ -633,6 +701,99 @@ class DevicePage(Gtk.Box):
                 btn.add_css_class("active")
             else:
                 btn.remove_css_class("active")
+
+    def _save_nickname(self):
+        if not hasattr(self, "_nick_entry"):
+            return
+        text = self._nick_entry.get_text().strip()
+        profiles.set_nickname(self._bt_device.address, text or None)
+
+    def _on_nickname_activate(self, _entry):
+        self._save_nickname()
+
+    def _on_nickname_focus_lost(self, entry, _param):
+        if not entry.has_focus():
+            self._save_nickname()
+
+    def _on_auto_pause_toggled(self, _switch, state: bool):
+        profiles.set_notify_prefs(self._bt_device.address, {"wear_mpris": state})
+        return False
+
+    def _on_notif_battery_toggled(self, _switch, state: bool):
+        profiles.set_notify_prefs(self._bt_device.address, {"battery_low": state})
+        return False
+
+    def _on_notif_connect_toggled(self, _switch, state: bool):
+        profiles.set_notify_prefs(self._bt_device.address, {"connect": state})
+        return False
+
+    def _on_notif_disconnect_toggled(self, _switch, state: bool):
+        profiles.set_notify_prefs(self._bt_device.address, {"disconnect": state})
+        return False
+
+    def _on_export_clicked(self, _btn):
+        dialog = Gtk.FileChooserNative(
+            title="Export Profile",
+            transient_for=self.get_root(),
+            action=Gtk.FileChooserAction.SAVE,
+        )
+        dialog.set_current_name(f"something-x-{self._bt_device.address.replace(':', '-')}.json")
+        dialog.connect("response", self._on_export_response, dialog)
+        dialog.show()
+
+    def _on_export_response(self, _dialog, response: int, dialog: Gtk.FileChooserNative):
+        if response != Gtk.ResponseType.ACCEPT:
+            return
+        gfile = dialog.get_file()
+        if not gfile:
+            return
+        path = gfile.get_path()
+        data = profiles.export_profile(self._bt_device.address)
+        try:
+            with open(path, "w") as f:
+                json.dump(data, f, indent=2)
+        except Exception as exc:
+            print(f"[device] export failed: {exc}")
+
+    def _on_import_clicked(self, _btn):
+        dialog = Gtk.FileChooserNative(
+            title="Import Profile",
+            transient_for=self.get_root(),
+            action=Gtk.FileChooserAction.OPEN,
+        )
+        filt = Gtk.FileFilter()
+        filt.set_name("JSON files")
+        filt.add_mime_type("application/json")
+        filt.add_pattern("*.json")
+        dialog.add_filter(filt)
+        dialog.connect("response", self._on_import_response, dialog)
+        dialog.show()
+
+    def _on_import_response(self, _dialog, response: int, dialog: Gtk.FileChooserNative):
+        if response != Gtk.ResponseType.ACCEPT:
+            return
+        gfile = dialog.get_file()
+        if not gfile:
+            return
+        path = gfile.get_path()
+        try:
+            with open(path) as f:
+                data = json.load(f)
+            profiles.import_profile(self._bt_device.address, data)
+            self._reload_notif_switches()
+            if hasattr(self, "_nick_entry"):
+                nick = profiles.get_nickname(self._bt_device.address)
+                self._nick_entry.set_text(nick or "")
+        except Exception as exc:
+            print(f"[device] import failed: {exc}")
+
+    def _reload_notif_switches(self):
+        if not hasattr(self, "_notif_battery_switch"):
+            return
+        prefs = profiles.get_notify_prefs(self._bt_device.address)
+        self._notif_battery_switch.set_active(prefs.get("battery_low", True))
+        self._notif_connect_switch.set_active(prefs.get("connect", True))
+        self._notif_disconnect_switch.set_active(prefs.get("disconnect", True))
 
     def _on_anc_clicked(self, _btn, mode: int):
         self._sync_anc_ui(mode)
