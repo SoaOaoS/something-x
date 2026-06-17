@@ -142,9 +142,9 @@ def test_nickname_does_not_affect_other_device():
 # ── notify_prefs ──────────────────────────────────────────────────────────────
 
 
-def test_get_notify_prefs_defaults_all_true():
+def test_get_notify_prefs_defaults():
     prefs = profiles.get_notify_prefs("AA:BB:CC:DD:EE:FF")
-    assert prefs == {"battery_low": True, "connect": True, "disconnect": True}
+    assert prefs == {"battery_low": True, "connect": True, "disconnect": True, "wear_mpris": False}
 
 
 def test_set_notify_prefs_roundtrip():

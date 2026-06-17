@@ -90,7 +90,7 @@ def test_parse_battery_updates_only_present_types():
     payload = bytes([0x01, 0x03, 60])
     dev._parse_battery(payload)
     assert dev.state.right_battery == 60
-    assert dev.state.left_battery == -1   # untouched default
+    assert dev.state.left_battery == -1  # untouched default
     assert dev.state.case_battery == -1
 
 

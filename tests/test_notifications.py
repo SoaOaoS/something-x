@@ -131,3 +131,97 @@ def test_battery_low_sent_with_default_prefs():
         fired.wait(timeout=2)
 
     assert calls
+
+
+# ── wear_mpris pref ───────────────────────────────────────────────────────────
+
+
+def _set_wearing(dev: NothingDevice, left: bool, right: bool):
+    """Directly update wearing state and call the MPRIS check."""
+    dev.state.left_wearing = left
+    dev.state.right_wearing = right
+    dev._check_wear_mpris()
+
+
+def test_wear_mpris_pauses_when_both_removed(tmp_path, monkeypatch):
+    monkeypatch.setattr(profiles, "_PROFILES_FILE", str(tmp_path / "profiles.json"))
+    profiles.set_notify_prefs(_ADDR, {"wear_mpris": True})
+
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+
+    dev = _make_device()
+    with patch("nothing_app.protocol.subprocess.run", fake_run):
+        _set_wearing(dev, True, True)  # both wearing
+        _set_wearing(dev, False, False)  # both removed → pause
+        import time
+
+        time.sleep(0.05)
+
+    assert any("pause" in c for c in calls)
+
+
+def test_wear_mpris_resumes_when_reinserted(tmp_path, monkeypatch):
+    monkeypatch.setattr(profiles, "_PROFILES_FILE", str(tmp_path / "profiles.json"))
+    profiles.set_notify_prefs(_ADDR, {"wear_mpris": True})
+
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+
+    dev = _make_device()
+    with patch("nothing_app.protocol.subprocess.run", fake_run):
+        _set_wearing(dev, True, True)
+        _set_wearing(dev, False, False)  # pause
+        _set_wearing(dev, True, False)  # one bud back in → play
+        import time
+
+        time.sleep(0.05)
+
+    cmds = [c[-1] for c in calls]
+    assert "pause" in cmds
+    assert "play" in cmds
+
+
+def test_wear_mpris_disabled_by_default():
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+
+    dev = _make_device()
+    with patch("nothing_app.protocol.subprocess.run", fake_run):
+        _set_wearing(dev, True, True)
+        _set_wearing(dev, False, False)
+        import time
+
+        time.sleep(0.05)
+
+    assert not calls, "wear_mpris is opt-in — should not fire with default prefs"
+
+
+def test_wear_mpris_no_double_play(tmp_path, monkeypatch):
+    """Wearing state bouncing while already in-ear should not trigger repeated plays."""
+    monkeypatch.setattr(profiles, "_PROFILES_FILE", str(tmp_path / "profiles.json"))
+    profiles.set_notify_prefs(_ADDR, {"wear_mpris": True})
+
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+
+    dev = _make_device()
+    with patch("nothing_app.protocol.subprocess.run", fake_run):
+        _set_wearing(dev, True, True)
+        _set_wearing(dev, False, False)  # pause
+        _set_wearing(dev, True, False)  # play
+        _set_wearing(dev, True, True)  # still wearing — no extra play
+        import time
+
+        time.sleep(0.05)
+
+    play_calls = [c for c in calls if "play" in c]
+    assert len(play_calls) == 1

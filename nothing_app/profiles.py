@@ -5,7 +5,7 @@ _DIR = os.path.expanduser("~/.config/something-x")
 _PROFILES_FILE = os.path.join(_DIR, "profiles.json")
 _LAST_DEV_FILE = os.path.join(_DIR, "last_device")
 
-_NOTIFY_DEFAULTS: dict = {"battery_low": True, "connect": True, "disconnect": True}
+_NOTIFY_DEFAULTS: dict = {"battery_low": True, "connect": True, "disconnect": True, "wear_mpris": False}
 _ALLOWED_IMPORT_KEYS = frozenset({"anc", "eq", "nickname", "notify"})
 
 

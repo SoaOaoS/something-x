@@ -22,7 +22,11 @@ def mock_profiles(monkeypatch):
     monkeypatch.setattr(profiles, "save", MagicMock())
     monkeypatch.setattr(profiles, "load", MagicMock(return_value={}))
     monkeypatch.setattr(profiles, "set_last_device", MagicMock())
-    monkeypatch.setattr(profiles, "get_notify_prefs", MagicMock(return_value={"battery_low": True, "connect": True, "disconnect": True}))
+    monkeypatch.setattr(
+        profiles,
+        "get_notify_prefs",
+        MagicMock(return_value={"battery_low": True, "connect": True, "disconnect": True}),
+    )
     monkeypatch.setattr(profiles, "get_nickname", MagicMock(return_value=None))
 
 
