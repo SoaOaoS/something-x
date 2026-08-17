@@ -332,8 +332,12 @@ class NothingDevice(GObject.Object):
         except TimeoutError:
             pass
 
-        if not data:
-            _log(f"[protocol] ch{ch}: no response (skipping)")
+        # A channel that answers is not necessarily ours: the Handsfree channel
+        # replies to anything with an AT string (e.g. "AT+BRSF=1019\r"), and
+        # accepting it makes every later command time out. Only the two known
+        # frame headers are valid.
+        if not data or data[0] not in (_SOF, _L_DEV_HDR):
+            _log(f"[protocol] ch{ch}: no usable response (skipping)")
             sock.close()
             return None
 
