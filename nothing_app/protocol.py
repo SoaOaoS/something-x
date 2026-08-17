@@ -162,7 +162,11 @@ class NothingDevice(GObject.Object):
             return
 
         def _run():
-            channels = self._discover_channels()
+            # Always fall through to the probe list: SDP may answer with
+            # channels that exist but do not speak the Nothing protocol (e.g.
+            # only AVRCP ch3 on some devices). Discovered channels keep
+            # priority; dict.fromkeys dedupes while preserving order.
+            channels = list(dict.fromkeys(list(self._discover_channels()) + _PROBE_CHANNELS))
             for ch in channels:
                 result = self._try_channel(ch)
                 if result is None:
