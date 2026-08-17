@@ -587,6 +587,16 @@ class NothingDevice(GObject.Object):
                 break
             etype = payload[i]
             val = payload[i + 1]
+            if etype == _BAT_STEREO:
+                # Single-unit device: one wear state for the whole headphone.
+                # Mirror it onto both sides so wear-based pause/resume, which
+                # tests left and right, behaves correctly.
+                worn = bool(val & 0x04)
+                if worn != self.state.left_wearing or worn != self.state.right_wearing:
+                    self.state.left_wearing = worn
+                    self.state.right_wearing = worn
+                    changed = True
+                continue
             if etype not in (2, 3):
                 continue
             in_ear = bool(val & 0x04)
