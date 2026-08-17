@@ -64,11 +64,12 @@ _EVT_STATUS = 0xE002
 _EVT_NOISE_RED = 0xE003
 
 # Battery payload: [type:1][val:1] pairs
-#   type 2=left  3=right  4=case
+#   type 2=left  3=right  4=case  6=stereo (single-unit devices: headphones)
 #   val: bit7=charging, bits[6:0]=percent
 _BAT_LEFT = 2
 _BAT_RIGHT = 3
 _BAT_CASE = 4
+_BAT_STEREO = 6  # Nothing Headphone (1): one battery, no case, no left/right
 
 # ANC wire values for SET_NOISE_RED payload byte [1] (type=1 = NOISE_REDUCTION_MODE triplet)
 # These are MODE constants from DeviceNoiseReduction.java, NOT the VALUE constants.
@@ -500,6 +501,15 @@ class NothingDevice(GObject.Object):
             btype = payload[i]
             bval = payload[i + 1]
             pct = bval & 0x7F
+            if btype == _BAT_STEREO:
+                # Single-unit device (headphones). Mirror onto both sides so the
+                # existing UI and CLI, which only know left/right/case, show it.
+                if pct != self.state.left_battery:
+                    self.state.left_battery = pct
+                    self.state.right_battery = pct
+                    self._check_low_battery("stereo", pct, "Headphone")
+                    changed = True
+                continue
             if btype == _BAT_LEFT and pct != self.state.left_battery:
                 self.state.left_battery = pct
                 self._check_low_battery("left", pct, "Left earbud")
