@@ -44,3 +44,6 @@ nothing_app/_version.py
 *apkm*
 apkm_decompiled/
 apkm_extracted/
+
+# Direnv folder
+.direnv

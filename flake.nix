@@ -6,7 +6,7 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -20,24 +20,28 @@
 
           src = ./.;
 
-          build-system = [ python.pkgs.setuptools python.pkgs.wheel ];
-
-          dependencies = [
-            python.pkgs.pygobject3
-            python.pkgs.dbus-python
-            python.pkgs.pycairo
+          build-system = with python.pkgs; [ 
+            setuptools 
+            setuptools-scm
+            wheel 
           ];
 
-          nativeBuildInputs = [
-            pkgs.wrapGAppsHook4
-            pkgs.gobject-introspection
+          dependencies = with python.pkgs; [
+            pygobject3
+            dbus-python
+            pycairo
           ];
 
-          buildInputs = [
-            pkgs.gtk4
-            pkgs.libadwaita
-            pkgs.bluez
-            pkgs.libnotify
+          nativeBuildInputs = with pkgs; [
+            wrapGAppsHook4
+            gobject-introspection
+          ];
+
+          buildInputs = with pkgs; [
+            gtk4
+            libadwaita
+            bluez
+            libnotify
           ];
 
           postInstall = ''
