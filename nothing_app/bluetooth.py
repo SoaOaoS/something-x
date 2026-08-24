@@ -16,6 +16,7 @@ NOTHING_PATTERNS = (
     "cmf buds",
     "cmf earphone",
     "nothing phone",
+    "nothing headphone",
 )
 
 # Lightweight proxy flags: no property caching, no auto-signal wiring.

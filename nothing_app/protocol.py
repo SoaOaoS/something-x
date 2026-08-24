@@ -64,11 +64,12 @@ _EVT_STATUS = 0xE002
 _EVT_NOISE_RED = 0xE003
 
 # Battery payload: [type:1][val:1] pairs
-#   type 2=left  3=right  4=case
+#   type 2=left  3=right  4=case  6=stereo (single-unit devices: headphones)
 #   val: bit7=charging, bits[6:0]=percent
 _BAT_LEFT = 2
 _BAT_RIGHT = 3
 _BAT_CASE = 4
+_BAT_STEREO = 6  # Nothing Headphone (1): one battery, no case, no left/right
 
 # ANC wire values for SET_NOISE_RED payload byte [1] (type=1 = NOISE_REDUCTION_MODE triplet)
 # These are MODE constants from DeviceNoiseReduction.java, NOT the VALUE constants.
@@ -162,7 +163,11 @@ class NothingDevice(GObject.Object):
             return
 
         def _run():
-            channels = self._discover_channels()
+            # Always fall through to the probe list: SDP may answer with
+            # channels that exist but do not speak the Nothing protocol (e.g.
+            # only AVRCP ch3 on some devices). Discovered channels keep
+            # priority; dict.fromkeys dedupes while preserving order.
+            channels = list(dict.fromkeys(list(self._discover_channels()) + _PROBE_CHANNELS))
             for ch in channels:
                 result = self._try_channel(ch)
                 if result is None:
@@ -328,8 +333,12 @@ class NothingDevice(GObject.Object):
         except TimeoutError:
             pass
 
-        if not data:
-            _log(f"[protocol] ch{ch}: no response (skipping)")
+        # A channel that answers is not necessarily ours: the Handsfree channel
+        # replies to anything with an AT string (e.g. "AT+BRSF=1019\r"), and
+        # accepting it makes every later command time out. Only the two known
+        # frame headers are valid.
+        if not data or data[0] not in (_SOF, _L_DEV_HDR):
+            _log(f"[protocol] ch{ch}: no usable response (skipping)")
             sock.close()
             return None
 
@@ -492,6 +501,15 @@ class NothingDevice(GObject.Object):
             btype = payload[i]
             bval = payload[i + 1]
             pct = bval & 0x7F
+            if btype == _BAT_STEREO:
+                # Single-unit device (headphones). Mirror onto both sides so the
+                # existing UI and CLI, which only know left/right/case, show it.
+                if pct != self.state.left_battery:
+                    self.state.left_battery = pct
+                    self.state.right_battery = pct
+                    self._check_low_battery("stereo", pct, "Headphone")
+                    changed = True
+                continue
             if btype == _BAT_LEFT and pct != self.state.left_battery:
                 self.state.left_battery = pct
                 self._check_low_battery("left", pct, "Left earbud")
@@ -569,6 +587,16 @@ class NothingDevice(GObject.Object):
                 break
             etype = payload[i]
             val = payload[i + 1]
+            if etype == _BAT_STEREO:
+                # Single-unit device: one wear state for the whole headphone.
+                # Mirror it onto both sides so wear-based pause/resume, which
+                # tests left and right, behaves correctly.
+                worn = bool(val & 0x04)
+                if worn != self.state.left_wearing or worn != self.state.right_wearing:
+                    self.state.left_wearing = worn
+                    self.state.right_wearing = worn
+                    changed = True
+                continue
             if etype not in (2, 3):
                 continue
             in_ear = bool(val & 0x04)
