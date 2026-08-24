@@ -34,6 +34,14 @@ jobs:
           fi
           echo "New version: $NEW"
           echo "new=$NEW"    >> $GITHUB_OUTPUT
+
+          # If this exact tag already exists (e.g. no new releasable commit
+          # since the last release), do not try to create it again.
+          if git rev-parse -q --verify "refs/tags/v$NEW" >/dev/null 2>&1; then
+            echo "Tag v$NEW already exists. Skipping release."
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           echo "skip=false"  >> $GITHUB_OUTPUT
 
       # ── Tag and push ────────────────────────────────────────────────────
