@@ -198,11 +198,17 @@ class BluetoothManager(GObject.Object):
             return
         dev = self.devices[path]
         old_connected = dev.connected
+        old_name = dev.name
         dev.update(dict(changed))
         if dev.connected != old_connected:
             sig = "device-connected" if dev.connected else "device-disconnected"
             GLib.idle_add(self.emit, sig, path)
-        GLib.idle_add(self.emit, "devices-changed")
+        # While discovery runs BlueZ streams RSSI and ManufacturerData several
+        # times a second. update() ignores both, so rebuilding the device list
+        # for them changes nothing on screen except to make it flicker. Only
+        # signal when a property the UI actually shows has changed.
+        if dev.connected != old_connected or dev.name != old_name:
+            GLib.idle_add(self.emit, "devices-changed")
 
     def _on_ifaces_added(self, _conn, _sender, _path, _iface, _signal, params, _user_data):
         obj_path, ifaces = params.unpack()
