@@ -168,11 +168,9 @@ class NothingDevice(GObject.Object):
             # only AVRCP ch3 on some devices). Discovered channels keep
             # priority; dict.fromkeys dedupes while preserving order.
             channels = list(dict.fromkeys(list(self._discover_channels()) + _PROBE_CHANNELS))
-            for ch in channels:
-                result = self._try_channel(ch)
-                if result is None:
-                    continue
-                sock, initial = result
+            selected = self._select_channel(channels)
+            if selected is not None:
+                sock, initial, ch = selected
                 self._sock = sock
                 self._rfcomm_connected = True
                 _log(f"[protocol] using ch{ch}")
@@ -288,6 +286,33 @@ class NothingDevice(GObject.Object):
 
         _log(f"[protocol] probing channels {_PROBE_CHANNELS}")
         return _PROBE_CHANNELS
+
+    def _select_channel(self, channels: list[int]) -> tuple[socket.socket, bytes, int] | None:
+        """Pick a channel, preferring one that actually speaks 0x55.
+
+        A leading 0x03 is not proof the channel is ours: unrelated vendor
+        services on these devices answer with the same byte as the legacy
+        device header. Accepting one leaves the session "connected" but mute --
+        activation never completes, so every later SET is silently dropped.
+        Hold the first legacy responder as a fallback and use it only when no
+        channel answers with 0x55.
+        """
+        fallback: tuple[socket.socket, bytes, int] | None = None
+        for ch in channels:
+            result = self._try_channel(ch)
+            if result is None:
+                continue
+            sock, initial = result
+            if initial[:1] == bytes([_SOF]):
+                if fallback is not None:
+                    fallback[0].close()
+                return sock, initial, ch
+            if fallback is None:
+                _log(f"[protocol] ch{ch}: legacy header -- kept as fallback, still probing for 0x55")
+                fallback = (sock, initial, ch)
+            else:
+                sock.close()
+        return fallback
 
     def _try_channel(self, ch: int) -> tuple[socket.socket, bytes] | None:
         for attempt in range(2):

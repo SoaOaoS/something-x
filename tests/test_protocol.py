@@ -271,3 +271,66 @@ def test_process_x55_two_consecutive_frames(mock_profiles):
     dev._process_x55(f1 + f2)
     assert dev.state.left_battery == 70
     assert dev.state.anc_mode == ANCMode.TRANSPARENCY
+
+
+# ── _select_channel ───────────────────────────────────────────────────────────
+
+
+class _FakeSock:
+    def __init__(self):
+        self.closed = False
+
+    def close(self):
+        self.closed = True
+
+
+def _stub_channels(device, replies):
+    """Make _try_channel answer from `replies` (channel -> first bytes)."""
+    socks = {}
+
+    def _try(ch):
+        if ch not in replies:
+            return None
+        socks[ch] = _FakeSock()
+        return socks[ch], replies[ch]
+
+    device._try_channel = _try
+    return socks
+
+
+def test_select_channel_prefers_0x55_over_earlier_legacy_responder():
+    # ch17 is probed first and answers with a leading 0x03 that is not ours;
+    # the real protocol lives on ch16 and must win.
+    dev = make_device()
+    socks = _stub_channels(dev, {17: b"\x03\x01\x00\x03", 16: b"\x55\x60\x01\x01"})
+    selected = dev._select_channel([15, 17, 16, 18])
+    assert selected is not None
+    _, initial, ch = selected
+    assert ch == 16
+    assert initial[:1] == b"\x55"
+    assert socks[17].closed
+    assert not socks[16].closed
+
+
+def test_select_channel_falls_back_to_legacy_when_no_0x55_answers():
+    dev = make_device()
+    socks = _stub_channels(dev, {17: b"\x03\x01\x00\x03"})
+    selected = dev._select_channel([15, 17, 16])
+    assert selected is not None
+    assert selected[2] == 17
+    assert not socks[17].closed
+
+
+def test_select_channel_keeps_only_the_first_legacy_responder():
+    dev = make_device()
+    socks = _stub_channels(dev, {17: b"\x03\xaa", 16: b"\x03\xbb"})
+    selected = dev._select_channel([17, 16])
+    assert selected is not None
+    assert selected[2] == 17
+    assert socks[16].closed
+
+
+def test_select_channel_returns_none_when_nothing_answers():
+    dev = make_device()
+    _stub_channels(dev, {})
+    assert dev._select_channel([15, 17, 16]) is None
