@@ -12,7 +12,7 @@ gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, GLib, PangoCairo
 
 from ..bluetooth import BluetoothDevice, BluetoothManager
-from ..protocol import NothingDevice, ANCMode, EQ_PRESETS
+from ..protocol import NothingDevice, ANCMode, EQ_PRESETS, CUSTOM_EQ_BANDS, CUSTOM_EQ_RANGE
 from .. import profiles
 
 
@@ -342,6 +342,10 @@ class DevicePage(Gtk.Box):
         self._eq_buttons: list[tuple[str, Gtk.Button]] = []
         self._updating_ui = False
         self._vol_debounce_id: int | None = None
+        self._custom_eq_debounce_id: int | None = None
+        self._custom_eq_scales: dict[str, Gtk.Scale] = {}
+        self._custom_eq_labels: dict[str, Gtk.Label] = {}
+        self._custom_eq_handlers: dict[str, int] = {}
         self._vol_handler: int | None = None
         self._bt_conn_handler = bt_manager.connect("device-connected", self._on_bt_device_connected)
         self._bt_disc_handler = bt_manager.connect("device-disconnected", self._on_bt_device_disconnected)
@@ -428,14 +432,43 @@ class DevicePage(Gtk.Box):
         eq_flow.set_max_children_per_line(4)
         eq_flow.set_margin_bottom(4)
 
-        for preset in EQ_PRESETS:
-            btn = Gtk.Button(label=preset)
-            btn.add_css_class("eq-button")
-            btn.connect("clicked", self._on_eq_clicked, preset)
-            eq_flow.append(btn)
-            self._eq_buttons.append((preset, btn))
+        self._eq_flow = eq_flow
+        self._populate_eq_buttons(list(EQ_PRESETS))
 
         page.append(eq_flow)
+
+        # Only meaningful while the Custom listening mode is selected, so the
+        # whole block is hidden otherwise (and on models without listening
+        # modes, which have no such curve).
+        self._custom_eq_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        self._custom_eq_box.set_margin_bottom(4)
+        self._custom_eq_box.append(_section("CUSTOM CURVE"))
+        for band_name, freq in CUSTOM_EQ_BANDS:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+            name_lbl = Gtk.Label(label=f"{band_name} · {freq} Hz")
+            name_lbl.add_css_class("info-value")
+            name_lbl.set_xalign(0)
+            name_lbl.set_width_chars(15)
+            scale = Gtk.Scale.new_with_range(
+                Gtk.Orientation.HORIZONTAL, CUSTOM_EQ_RANGE[0], CUSTOM_EQ_RANGE[1], 1
+            )
+            scale.set_hexpand(True)
+            scale.set_draw_value(False)
+            scale.add_css_class("volume-slider")
+            val_lbl = Gtk.Label(label="0")
+            val_lbl.add_css_class("volume-label")
+            val_lbl.set_width_chars(3)
+            val_lbl.set_xalign(1)
+            handler = scale.connect("value-changed", self._on_custom_eq_changed)
+            row.append(name_lbl)
+            row.append(scale)
+            row.append(val_lbl)
+            self._custom_eq_box.append(row)
+            self._custom_eq_scales[band_name] = scale
+            self._custom_eq_labels[band_name] = val_lbl
+            self._custom_eq_handlers[band_name] = handler
+        self._custom_eq_box.set_visible(False)
+        page.append(self._custom_eq_box)
 
         page.append(_section("VOLUME"))
 
@@ -642,7 +675,15 @@ class DevicePage(Gtk.Box):
             state.right_wearing,
         )
         self._sync_anc_ui(state.anc_mode)
+        presets = list(dev.eq_preset_map())
+        if presets != getattr(self, "_eq_presets_shown", None):
+            self._populate_eq_buttons(presets)
         self._sync_eq_ui(state.eq_preset)
+        if hasattr(self, "_custom_eq_box"):
+            show_custom = dev.uses_listening_mode and state.eq_preset == "Custom"
+            self._custom_eq_box.set_visible(show_custom)
+            if show_custom and self._custom_eq_debounce_id is None:
+                self._apply_custom_eq_display(state.custom_eq)
         self._updating_ui = True
         if hasattr(self, "_in_ear_switch"):
             self._in_ear_switch.set_active(state.in_ear_detection)
@@ -694,6 +735,45 @@ class DevicePage(Gtk.Box):
                 btn.add_css_class("active")
             else:
                 btn.remove_css_class("active")
+
+    def _on_custom_eq_changed(self, _scale):
+        for band_name, scale in self._custom_eq_scales.items():
+            self._custom_eq_labels[band_name].set_label(f"{int(scale.get_value()):+d}")
+        if self._custom_eq_debounce_id is not None:
+            GLib.source_remove(self._custom_eq_debounce_id)
+        self._custom_eq_debounce_id = GLib.timeout_add(250, self._do_set_custom_eq)
+
+    def _do_set_custom_eq(self):
+        self._custom_eq_debounce_id = None
+        if self._nothing_dev:
+            vals = {n: int(s.get_value()) for n, s in self._custom_eq_scales.items()}
+            self._nothing_dev.set_custom_eq(vals["Bass"], vals["Mid"], vals["Treble"])
+        return False
+
+    def _apply_custom_eq_display(self, values: tuple[int, int, int]):
+        for (band_name, _freq), value in zip(CUSTOM_EQ_BANDS, values, strict=True):
+            scale = self._custom_eq_scales[band_name]
+            scale.handler_block(self._custom_eq_handlers[band_name])
+            scale.set_value(value)
+            scale.handler_unblock(self._custom_eq_handlers[band_name])
+            self._custom_eq_labels[band_name].set_label(f"{int(value):+d}")
+
+    def _populate_eq_buttons(self, presets: list[str]):
+        """(Re)build the preset buttons. Which presets exist depends on the
+        model, which is only known once the device reports its serial."""
+        if hasattr(self._eq_flow, "remove_all"):
+            self._eq_flow.remove_all()
+        else:  # GTK < 4.12
+            while (child := self._eq_flow.get_first_child()) is not None:
+                self._eq_flow.remove(child)
+        self._eq_buttons = []
+        for preset in presets:
+            btn = Gtk.Button(label=preset)
+            btn.add_css_class("eq-button")
+            btn.connect("clicked", self._on_eq_clicked, preset)
+            self._eq_flow.append(btn)
+            self._eq_buttons.append((preset, btn))
+        self._eq_presets_shown = list(presets)
 
     def _sync_eq_ui(self, active_preset: str):
         for preset, btn in self._eq_buttons:
