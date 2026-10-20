@@ -66,6 +66,14 @@ class SomethingXApplication(Adw.Application):
         self._load_css()
         self._load_theme_css()
         self._bt = BluetoothManager()
+        
+        if getattr(self, "_start_background", False):
+            win = SomethingXWindow(bt_manager=self._bt, application=self)
+            win.connect("close-request", self._on_window_close)
+            self._window = win
+            self._tray = SomethingXTray(self._bt, on_show_window=win.present)
+            return
+        
         splash = SplashScreen(on_done=self._on_splash_done)
         splash.set_application(self)
         self._splash = splash
@@ -267,21 +275,19 @@ def _run_cli(argv: list[str]) -> int:
     dev.disconnect_rfcomm()
     return exit_code[0]
 
-
 def _print_help():
     from . import __version__
-
     print(
         f"Something X {__version__}\n"
         "\nUsage:\n"
         "  something-x                             launch GUI\n"
+        "  something-x --background                start in tray only (no window)\n"
         "  something-x --battery                   print battery levels\n"
         "  something-x --anc off|on|transparency   set ANC mode\n"
         "  something-x --eq balanced|bass|treble|voice  set EQ preset\n"
         "  something-x --device AA:BB:CC:DD:EE:FF  target specific device\n"
         "  something-x --version                   print version and exit\n"
     )
-
 
 def main():
     argv = sys.argv[1:]
@@ -293,12 +299,19 @@ def main():
 
     if "--version" in argv or "-V" in argv:
         from . import __version__
-
         print(f"something-x {__version__}")
         sys.exit(0)
 
     if any(f in argv for f in cli_flags):
         sys.exit(_run_cli(argv))
 
+    start_background = "--background" in argv or "-B" in argv
+
+    clean_argv = [sys.argv[0]] + [
+        a for a in argv
+        if a not in ("--background", "-B")
+    ]
+
     app = SomethingXApplication()
-    sys.exit(app.run(sys.argv))
+    app._start_background = start_background
+    sys.exit(app.run(clean_argv))
