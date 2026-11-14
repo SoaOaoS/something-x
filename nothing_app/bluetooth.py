@@ -15,6 +15,7 @@ NOTHING_PATTERNS = (
     "ear (stick)",
     "cmf buds",
     "cmf earphone",
+    "cmf headphone",
     "nothing phone",
     "nothing headphone",
 )

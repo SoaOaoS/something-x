@@ -44,6 +44,7 @@ def test_is_nothing_true_for_known_patterns():
         "Ear (Stick)",
         "CMF Buds Pro 2",
         "CMF Earphone 1",
+        "CMF Headphone Pro",
         "Nothing Phone (2)",
     ]:
         assert make_device(name=name).is_nothing is True, f"{name!r} should be recognised"

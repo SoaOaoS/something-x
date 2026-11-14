@@ -345,6 +345,7 @@ class DevicePage(Gtk.Box):
         self._custom_eq_debounce_id: int | None = None
         self._custom_eq_scales: dict[str, Gtk.Scale] = {}
         self._custom_eq_labels: dict[str, Gtk.Label] = {}
+        self._custom_eq_name_labels: dict[str, Gtk.Label] = {}
         self._custom_eq_handlers: dict[str, int] = {}
         self._vol_handler: int | None = None
         self._bt_conn_handler = bt_manager.connect("device-connected", self._on_bt_device_connected)
@@ -446,6 +447,7 @@ class DevicePage(Gtk.Box):
         for band_name, freq in CUSTOM_EQ_BANDS:
             row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
             name_lbl = Gtk.Label(label=f"{band_name} · {freq} Hz")
+            self._custom_eq_name_labels[band_name] = name_lbl
             name_lbl.add_css_class("info-value")
             name_lbl.set_xalign(0)
             name_lbl.set_width_chars(15)
@@ -682,6 +684,8 @@ class DevicePage(Gtk.Box):
         if hasattr(self, "_custom_eq_box"):
             show_custom = dev.uses_listening_mode and state.eq_preset == "Custom"
             self._custom_eq_box.set_visible(show_custom)
+            for band_name, freq in dev.custom_eq_bands():
+                self._custom_eq_name_labels[band_name].set_label(f"{band_name} · {freq} Hz")
             if show_custom and self._custom_eq_debounce_id is None:
                 self._apply_custom_eq_display(state.custom_eq)
         self._updating_ui = True
