@@ -42,6 +42,7 @@ _CMD_EARPHONE = 0xC00A
 _CMD_NOISE_RED = 0xC01E  # get ANC state; payload [0x03] = request 3 entries
 _CMD_EQ_MODE = 0xC01F
 _CMD_HOST_VERSION = 0xC042  # GET_HOST_VERSION_DEVICE — firmware version (UTF-8 string)
+_CMD_DEVICE_MODEL = 0xC01C  # GET_DEVICE_MODEL — model base as uint16 LE (75 b1 -> "B175")
 
 # SET commands (0xF0xx) – app→device, ACK has bit15 cleared
 _CMD_SET_ACTIVATED = 0xF001  # activation response; no payload
@@ -93,7 +94,7 @@ _L_STATE = 0x02
 _L_BATTERY = 0x03
 
 # ── Channel probe priority ───────────────────────────────────────────────────
-_PROBE_CHANNELS = [15, 17, 16, 18, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+_PROBE_CHANNELS = [15, 17, 16, 18, 28, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
 
 
 # ── Public enumerations ──────────────────────────────────────────────────────
@@ -114,8 +115,8 @@ EQ_PRESETS = {
 }
 EQ_PRESET_NAMES = {v: k for k, v in EQ_PRESETS.items()}
 
-# CMF Buds Pro 2 / CMF Buds (B172 / B168) do not use the Nothing Ear EQ presets
-# above. They expose "listening modes": a different command, a different value
+# CMF Buds Pro 2 / CMF Buds / CMF Headphone Pro (B172 / B168 / B175) do not use
+# the Nothing Ear EQ presets above. They expose "listening modes": a different command, a different value
 # set, and a Custom slot backed by the 3-band parametric curve on the device.
 LISTENING_MODES = {
     "Balanced": 0,
@@ -128,7 +129,7 @@ LISTENING_MODES = {
 }
 LISTENING_MODE_NAMES = {v: k for k, v in LISTENING_MODES.items()}
 
-_LISTENING_MODE_MODELS = frozenset({"B172", "B168"})
+_LISTENING_MODE_MODELS = frozenset({"B172", "B168", "B175"})
 
 # The "Custom" listening mode plays a 3-band parametric curve stored on the
 # device. Only the three gains are user-editable; the frequencies and Q values
@@ -197,6 +198,17 @@ _CUSTOM_EQ_TEMPLATE = bytes(
     ]
 )
 _CUSTOM_EQ_GAIN_OFFSETS = (6, 19, 32)  # mid, treble, bass
+
+# Models whose curve differs from the template above: UI bands, plus the
+# float32 fields (payload offset -> value) to overwrite before sending.
+# B175 (CMF Headphone Pro): mid Q 0.7, treble at 6900 Hz
+# (IOTProductDeviceForretress.getSimpleCustomEQParameter in the APK).
+_CUSTOM_EQ_MODEL_BANDS = {
+    "B175": (("Bass", 140), ("Mid", 980), ("Treble", 6900)),
+}
+_CUSTOM_EQ_MODEL_FIELDS = {
+    "B175": {14: 0.7, 23: 6900.0},
+}
 
 
 def _eq_float(value: float, preamp: bool = False) -> bytes:
@@ -383,6 +395,10 @@ class NothingDevice(GObject.Object):
         """True when this model exposes listening modes instead of EQ presets."""
         return self.state.model_base in _LISTENING_MODE_MODELS
 
+    def custom_eq_bands(self) -> tuple:
+        """(name, Hz) for the three Custom-curve bands on this model."""
+        return _CUSTOM_EQ_MODEL_BANDS.get(self.state.model_base, CUSTOM_EQ_BANDS)
+
     def eq_preset_map(self) -> dict:
         return LISTENING_MODES if self.uses_listening_mode else EQ_PRESETS
 
@@ -411,6 +427,8 @@ class NothingDevice(GObject.Object):
             return
         gains = (mid, treble, bass)  # device band order
         buf = bytearray(_CUSTOM_EQ_TEMPLATE)
+        for offset, value in _CUSTOM_EQ_MODEL_FIELDS.get(self.state.model_base, {}).items():
+            buf[offset : offset + 4] = struct.pack("<f", value)
         buf[1:5] = _eq_float(-max(gains), preamp=True)
         for offset, gain in zip(_CUSTOM_EQ_GAIN_OFFSETS, gains, strict=True):
             buf[offset : offset + 4] = _eq_float(float(gain))
@@ -695,15 +713,15 @@ class NothingDevice(GObject.Object):
                 _log(f"[protocol] serial={sn!r}")
                 changed = True
                 base = _resolve_model_base(sn)
-                if base and base != self.state.model_base:
-                    self.state.model_base = base
-                    _log(f"[protocol] model={base}")
-                    pending, self._pending_eq_restore = self._pending_eq_restore, None
-                    if pending:
-                        self._send_eq_preset(pending, prefix="restore ")
-                    if base in _LISTENING_MODE_MODELS:
-                        self._x55_send(_CMD_LISTENING_MODE)
-                        self._x55_send(_CMD_CUSTOM_EQ)
+                if base:
+                    changed = self._set_model_base(base) or changed
+                elif self.state.model_base is None:
+                    # Serial formats we cannot map (e.g. "CI..." on the CMF
+                    # Headphone Pro): ask the device for its model directly.
+                    self._x55_send(_CMD_DEVICE_MODEL)
+        elif cmd_id == _CMD_DEVICE_MODEL:
+            if len(payload) >= 2 and self.state.model_base is None:
+                changed = self._set_model_base(f"{struct.unpack_from('<H', payload)[0]:04X}")
         elif cmd_id == _CMD_SET_NOISE_RED:
             _log(f"[RX INFO] ANC set ACK: {payload.hex()}")
         elif cmd_id == _CMD_SET_EQ:
@@ -731,6 +749,20 @@ class NothingDevice(GObject.Object):
             _log(f"[RX    ] cmd=0x{cmd_id:04X} payload={payload.hex()}")
         if changed:
             GLib.idle_add(self.emit, "state-changed")
+
+    def _set_model_base(self, base: str) -> bool:
+        """Record the model and run the model-dependent follow-ups once."""
+        if base == self.state.model_base:
+            return False
+        self.state.model_base = base
+        _log(f"[protocol] model={base}")
+        pending, self._pending_eq_restore = self._pending_eq_restore, None
+        if pending:
+            self._send_eq_preset(pending, prefix="restore ")
+        if base in _LISTENING_MODE_MODELS:
+            self._x55_send(_CMD_LISTENING_MODE)
+            self._x55_send(_CMD_CUSTOM_EQ)
+        return True
 
     def _parse_battery(self, payload: bytes) -> bool:
         # payload: [count:1][type:1][val:1]... (DataExtKt.toPairs with leading count byte)

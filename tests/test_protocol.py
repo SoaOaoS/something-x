@@ -1,5 +1,7 @@
 """Tests for the 0x55 frame parser and device-state parsing logic."""
 
+import struct
+
 import pytest
 
 from nothing_app.protocol import (
@@ -12,6 +14,7 @@ from nothing_app.protocol import (
     _CMD_REMOTE_CONF,
     _CMD_HOST_VERSION,
     _CMD_CUSTOM_EQ,
+    _CMD_DEVICE_MODEL,
     _CMD_LISTENING_MODE,
     _CMD_SET_CUSTOM_EQ,
     _CMD_SET_EQ,
@@ -20,6 +23,7 @@ from nothing_app.protocol import (
     LISTENING_MODES,
     _eq_float,
     _eq_float_decode,
+    _PROBE_CHANNELS,
     _prioritise,
     _resolve_model_base,
 )
@@ -364,6 +368,38 @@ def test_resolve_model_base(serial, expected):
     assert _resolve_model_base(serial) == expected
 
 
+def test_unmapped_serial_falls_back_to_the_device_model_query():
+    # CMF Headphone Pro reports a "CI..." serial that carries no SKU.
+    dev = make_device()
+    sent = _capture_sends(dev)
+    dev._dispatch_x55(_CMD_REMOTE_CONF, b"6,2,1.0.1.49\n6,4,CI00000000000000\n")
+    assert dev.state.model_base is None
+    assert sent == [(_CMD_DEVICE_MODEL, b"")]
+
+
+def test_device_model_reply_sets_the_model_base():
+    # Byte-for-byte what a CMF Headphone Pro answers: 75 b1 -> "B175".
+    dev = make_device()
+    sent = _capture_sends(dev)
+    dev._dispatch_x55(_CMD_DEVICE_MODEL, bytes([0x75, 0xB1]))
+    assert dev.state.model_base == "B175"
+    assert dev.uses_listening_mode
+    assert sent == [(_CMD_LISTENING_MODE, b""), (_CMD_CUSTOM_EQ, b"")]
+
+
+def test_device_model_reply_does_not_override_a_serial_match():
+    dev = make_device()
+    dev.state.model_base = "B172"
+    _capture_sends(dev)
+    dev._dispatch_x55(_CMD_DEVICE_MODEL, bytes([0x75, 0xB1]))
+    assert dev.state.model_base == "B172"
+
+
+def test_probe_list_covers_the_headphone_pro_channel():
+    # CMF Headphone Pro speaks 0x55 on RFCOMM channel 28 only.
+    assert 28 in _PROBE_CHANNELS
+
+
 # ── EQ float encoding ─────────────────────────────────────────────────────────
 
 
@@ -458,6 +494,27 @@ def test_custom_eq_payload_uses_device_band_order():
     assert _eq_float_decode(payload[32:36]) == 6.0
     # preamp is -max(gain) so boosted bands cannot clip
     assert _eq_float_decode(payload[1:5]) == -6.0
+
+
+def test_custom_eq_uses_the_headphone_pro_band_parameters():
+    dev = make_device()
+    dev.state.model_base = "B175"
+    sent = _capture_sends(dev)
+    dev.set_custom_eq(bass=2, mid=0, treble=1)
+    _cmd, payload = sent[0]
+    assert struct.unpack_from("<f", payload, 14)[0] == pytest.approx(0.7)  # mid Q
+    assert struct.unpack_from("<f", payload, 23)[0] == 6900.0  # treble Hz
+    assert struct.unpack_from("<f", payload, 36)[0] == 140.0  # bass Hz, unchanged
+    assert dev.custom_eq_bands()[2] == ("Treble", 6900)
+
+
+def test_custom_eq_template_is_untouched_for_other_models():
+    dev = make_device()
+    dev.state.model_base = "B172"
+    sent = _capture_sends(dev)
+    dev.set_custom_eq(0, 0, 0)
+    assert struct.unpack_from("<f", sent[0][1], 23)[0] == 3500.0
+    assert dev.custom_eq_bands()[2] == ("Treble", 3500)
 
 
 def test_custom_eq_clamps_to_the_supported_range():
